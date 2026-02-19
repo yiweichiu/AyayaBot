@@ -1,94 +1,78 @@
-# AyayaBot - 棕色塵埃2 Discord 兌換碼機器人
+# AyayaBot - 棕色塵埃 2 Discord 公告與兌換碼機器人
 
-AyayaBot 是一個 Go 語言編寫的 Discord 機器人，用於自動獲取《棕色塵埃2》的兌換碼，並將最新的有效兌換碼發送到指定的 Discord 頻道。它會自動過濾已過期的兌換碼，並僅發送新發現的兌換碼。
+AyayaBot 是一個使用 Go 語言編寫的 Discord 機器人，專門用於自動監控《棕色塵埃 2》(Brown Dust 2) 的最新官方公告與兌換碼。它能定時抓取資訊並發送到指定的 Discord 頻道，確保你不會錯過任何重要的遊戲動態與獎勵。
 
-## 功能
+## 核心功能
 
-*   **定時獲取兌換碼**: 定期從指定的 API (`https://api.thebd2pulse.com/redeem`) 獲取最新的《棕色塵埃2》兌換碼資訊。
-*   **自動過濾過期兌換碼**: 根據兌換碼的有效期限和當前時間，自動排除已過期的兌換碼。
-*   **僅發送新兌換碼**: 機器人會記錄已發送過的兌換碼，只將新發現的有效兌換碼發送到 Discord 頻道，避免重複發送。
-*   **包含獎勵資訊**: 發送的訊息中會包含兌換碼及其對應的繁體中文獎勵內容，格式為 `{兌換碼}:{獎勵內容}`。
-*   **靈活的配置**: 所有關鍵資訊（Discord Bot Token、頻道 ID、API URL、API Key、排程）均透過 YAML 配置文件進行管理。
-*   **可配置的排程**: 支援基於 `cron` 表達式的靈活排程設定。
+*   **自動監控官方公告**: 定期檢查《棕色塵埃 2》官方新聞 API，發現新公告時立即通知。
+*   **自動獲取兌換碼**: 從 [BD2 Pulse API](https://thebd2pulse.com/) 獲取最新的兌換碼資訊。
+*   **智慧過濾**: 
+    *   自動過濾已過期的兌換碼。
+    *   自動記錄已發送過的公告與兌換碼，避免重複推送。
+*   **多語言支援**: 優先提取繁體中文獎勵說明。
+*   **靈活排程**: 支援基於 `cron` 表達式的多時段排程設定。
+*   **安全管理**: 支援範本化設定檔管理，保護敏感的 API Key 與 Token。
 
 ## 安裝與設定
 
 ### 1. 前提條件
 
-在運行本專案之前，請確保您的系統已安裝 Go 語言環境（版本 1.25.5 或更高）。
+確保系統已安裝 Go 1.21 或更高版本。
 
-### 2. 下載專案
+### 2. 下載與安裝
 
 ```bash
 git clone https://github.com/yiweichiu/AyayaBot.git
 cd AyayaBot
-```
-
-### 3. 安裝依賴
-
-進入專案目錄後，運行以下命令安裝所需的 Go 模組：
-
-```bash
 go mod tidy
 ```
 
-### 4. 配置 `config.yaml`
+### 3. 設定設定檔 (重要)
 
-在專案根目錄下，您會找到一個 `config.yaml` 檔案。請根據您的需求編輯此檔案：
+本專案使用 `config.yaml` 進行管理，但為了安全起見，真實的設定檔已被加入 `.gitignore`。請依照以下步驟設定：
 
-```yaml
-discord:
-  token: "Bot YOUR_DISCORD_BOT_TOKEN" # 替換為您的 Discord Bot Token。請務必在 Token 前加上 "Bot "
-  channel_id: "YOUR_DISCORD_CHANNEL_ID" # 替換為您希望機器人發送訊息的 Discord 頻道 ID
-api:
-  url: "https://api.thebd2pulse.com/redeem" # 棕色塵埃2兌換碼 API URL
-  api_key: "pulse-key-abc123-xyz789-very-secret" # 替換為您的 API Key
-schedule:
-  - "0 8 * * *" # 每日上午 08:00
-  - "0 18 * * *" # 每日下午 18:00
-  # 您可以根據 cron 格式添加更多排程，例如每分鐘一次為 "- "* * * * *""
-```
+1.  複製範本檔：
+    ```bash
+    cp config.yaml.example config.yaml
+    ```
+2.  編輯 `config.yaml` 並填入你的真實資訊：
+    *   `discord.token`: 你的 Discord Bot Token (需包含 `Bot ` 前綴)。
+    *   `discord.channel_id`: 接收通知的頻道 ID。
+    *   `redeem.api.api_key`: BD2 Pulse 的 API Key。
 
-*   **獲取 Discord Bot Token**: 請參閱 [Discord 開發者門戶](https://discord.com/developers/applications) 創建一個 Bot 應用程式並獲取 Token。
-*   **獲取 Discord 頻道 ID**: 在 Discord 客戶端中啟用開發者模式（使用者設定 -> 高級），然後右鍵點擊您想要發送訊息的頻道，選擇「複製 ID」。
-
-### 5. `redeem.json` 檔案
-
-機器人會在運行目錄下自動創建和維護 `redeem.json` 檔案，用於記錄已發送過的兌換碼。您無需手動創建或修改它。
-
-## 運行
-
-完成上述設定後，您可以在專案根目錄下運行機器人：
+### 4. 編譯與執行
 
 ```bash
-go run main.go
+# 編譯
+go build -o ayayabot main.go
+
+# 執行
+./ayayabot
 ```
 
-機器人將會啟動，連接到 Discord，並根據 `config.yaml` 中定義的排程獲取並發送兌換碼。您可以在終端中看到日誌輸出。
+## 專案結構 (Go Idiomatic)
 
-要停止機器人，請在終端中按 `CTRL-C`。
-
-## 文件結構
-
-```
+```text
 AyayaBot/
-├── api/                  # 處理兌換碼 API 請求的邏輯
-│   └── bd2pulse.go
-├── config/               # 配置加載邏輯
-│   └── config.go
-├── discord/              # Discord 機器人相關功能（發送訊息）
-│   └── discord.go
-├── scheduler/            # 任務排程邏輯
-│   └── scheduler.go
-├── go.mod                # Go 模組文件
-├── go.sum                # Go 模組依賴的總和校驗文件
-├── config.yaml           # 機器人配置檔案
-├── main.go               # 機器人主程式入口
+├── config/               # 設定檔載入與環境變數處理
+├── discord/              # Discord Bot 連線與訊息發送邏輯
+├── model/                # 專案通用資料結構 (NewsItem, RedeemCode)
+├── repository/
+│   ├── bd2news/          # 棕色塵埃 2 新聞 API 交互邏輯
+│   └── bd2redeem/         # 棕色塵埃 2 兌換碼 API 交互邏輯
+├── scheduler/            # 排程管理與業務任務執行 (RunNewsTask, RunRedeemTask)
+├── config.yaml.example   # 設定檔範本 (受 Git 追蹤)
+├── GEMINI.md             # Gemini CLI 開發規範指引
+├── main.go               # 程式入口點，負責初始化與註冊任務
 └── README.md             # 本說明文件
 ```
 
-## 未來擴展
+## 開發指南
 
-*   **Webhook 功能**: 專案設計時已考慮到未來可以集成 Webhook 功能，以支持更靈活的訊息推送方式或與其他服務的集成。
-*   **更多 API 支援**: 擴展支持更多遊戲或服務的兌換碼 API。
-*   **命令功能**: 為 Discord 機器人添加命令功能，允許用戶手動觸發獲取兌換碼或查詢狀態。
+本專案遵循 **Idiomatic Go** 命名規範：
+*   Package 名稱均為簡潔的小寫單字。
+*   業務邏輯與排程邏輯分離，任務執行函數統一命名為 `Run...Task`。
+*   新增任務時，只需在 `scheduler` 建立任務並在 `main.go` 註冊。
+
+---
+*本機器人僅供學習與技術交流使用，所有資料來源歸原官方所有。*

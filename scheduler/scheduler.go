@@ -3,16 +3,24 @@ package scheduler
 import (
 	"log"
 
+	"github.com/yiweichiu/AyayaBot/config" // Import config package
+	"github.com/yiweichiu/AyayaBot/discord" // Import discord package
 	"github.com/robfig/cron/v3"
 )
 
+// Scheduler manages scheduled tasks for various functionalities.
 type Scheduler struct {
-	Cron *cron.Cron
+	Cron       *cron.Cron
+	Config     *config.Config
+	DiscordBot *discord.Bot
 }
 
-func NewScheduler() *Scheduler {
+// NewScheduler creates and initializes a new Scheduler instance.
+func NewScheduler(cfg *config.Config, bot *discord.Bot) *Scheduler {
 	return &Scheduler{
-		Cron: cron.New(),
+		Cron:       cron.New(),
+		Config:     cfg,
+		DiscordBot: bot,
 	}
 }
 

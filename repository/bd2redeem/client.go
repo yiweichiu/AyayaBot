@@ -1,28 +1,18 @@
-package api
+package bd2redeem
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/yiweichiu/AyayaBot/model" // Import model package
 )
 
-type RedeemCode struct {
-	Code        string                 `json:"code"`
-	Reward      map[string]interface{} `json:"reward"`
-	Status      string                 `json:"status"`
-	ExpiryDate  string                 `json:"expiry_date"`
-	ImageURL    interface{}            `json:"image_url"` // Can be null or string
-}
-
-type RedeemCodeInfo struct {
-	Code   string
-	Reward string
-}
-
-func GetRedeemCodes(apiURL, apiKey string) ([]RedeemCodeInfo, error) {
+// GetRedeemCodes fetches redeem codes from the BD2 Pulse API.
+func GetRedeemCodes(apiURL, apiKey string) ([]model.RedeemCodeInfo, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
@@ -41,19 +31,18 @@ func GetRedeemCodes(apiURL, apiKey string) ([]RedeemCodeInfo, error) {
 		return nil, fmt.Errorf("API returned non-OK status: %s", resp.Status)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read API response body: %w", err)
 	}
 
-
-	var redeemCodes []RedeemCode
+	var redeemCodes []model.RedeemCode
 	err = json.Unmarshal(body, &redeemCodes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal API response: %w", err)
 	}
 
-	var activeCodesInfo []RedeemCodeInfo
+	var activeCodesInfo []model.RedeemCodeInfo
 	currentDate := time.Now()
 	for _, rc := range redeemCodes {
 		// Determine reward string
@@ -66,7 +55,7 @@ func GetRedeemCodes(apiURL, apiKey string) ([]RedeemCodeInfo, error) {
 
 		// If status is "permanent" or "active", always include it
 		if rc.Status == "permanent" || rc.Status == "active" {
-			activeCodesInfo = append(activeCodesInfo, RedeemCodeInfo{Code: rc.Code, Reward: rewardStr})
+			activeCodesInfo = append(activeCodesInfo, model.RedeemCodeInfo{Code: rc.Code, Reward: rewardStr})
 			continue
 		}
 
@@ -84,7 +73,7 @@ func GetRedeemCodes(apiURL, apiKey string) ([]RedeemCodeInfo, error) {
 			// Compare expiry date with current date. Add if not expired yet (or expires today)
 			// Adding 23 hours, 59 minutes, 59 seconds to expiry to ensure it includes the whole day
 			if expiry.Add(23*time.Hour + 59*time.Minute + 59*time.Second).After(currentDate) {
-				activeCodesInfo = append(activeCodesInfo, RedeemCodeInfo{Code: rc.Code, Reward: rewardStr})
+				activeCodesInfo = append(activeCodesInfo, model.RedeemCodeInfo{Code: rc.Code, Reward: rewardStr})
 			}
 		}
 	}
