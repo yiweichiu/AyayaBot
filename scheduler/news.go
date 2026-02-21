@@ -12,9 +12,6 @@ import (
 	"github.com/yiweichiu/AyayaBot/repository/bd2news"
 )
 
-
-
-
 // RunNewsTask executes the full flow of fetching, comparing, and notifying news.
 func (s *Scheduler) RunNewsTask() {
 	log.Println("Executing news fetch job...")
@@ -84,7 +81,7 @@ func saveNewsToFile(newsItems []model.NewsItem) error {
 }
 
 // compareAndNotify compares old and new news items and sends notifications for new ones.
-func compareAndNotify(bot *discord.Bot, oldNews, newNews []model.NewsItem) error {
+func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem) error {
 	oldNewsMap := make(map[int]struct{})
 	for _, item := range oldNews {
 		oldNewsMap[item.ID] = struct{}{}
@@ -102,8 +99,8 @@ func compareAndNotify(bot *discord.Bot, oldNews, newNews []model.NewsItem) error
 		// Iterate in reverse to send from oldest to newest
 		for i := len(newAnnouncements) - 1; i >= 0; i-- {
 			newAnnc := newAnnouncements[i]
-			message := fmt.Sprintf("📢 **新公告**\n**標題:** %s\n**發佈時間:** %s\n**連結:** https://www.browndust2.com/zh-tw/news?page=0&type=all#%d",
-				newAnnc.Subject, newAnnc.PublishedAt.Format("2006-01-02 15:04"), newAnnc.ID)
+			message := fmt.Sprintf("📢 **[新公告](https://www.browndust2.com/zh-tw/news/view?id=%d)**\n**%s**",
+				newAnnc.ID, newAnnc.Subject)
 			err := bot.SendMessage(message)
 			if err != nil {
 				log.Printf("Error sending Discord message for new announcement %d: %v", newAnnc.ID, err)

@@ -39,6 +39,10 @@
    - 業務任務 (如抓取、通知) 應定義在 `scheduler` 目錄下的對應檔案中 (如 `RunNewsTask`)。
    - 排程註冊統一在 `main.go` 中透過 `AddJob(spec, func)` 進行。
    - **新聞通知順序**: 為了符合閱讀習慣，偵測到多筆新公告時，必須按發佈時間「由舊到新」傳送 (即對 `FetchNews` 回傳的降序列表進行反向遍歷)。
+6. **測試規範 (Testing)**:
+   - 所有外部 API 交互 (Repository 層) 必須具備使用 `httptest` 模擬回應的整合測試。
+   - 核心業務任務 (Scheduler 層) 必須透過介面抽離 (如 `Messenger`) 進行邏輯驗證，確保過濾與發送順序正確。
+   - 測試應避免產生持久性的副作用檔案（如 `news.json`），若需測試檔案讀寫應使用 Mock 或備份機制。
 
 ## 常用命令
 - **編譯專案**: `go build -o ayayabot main.go`

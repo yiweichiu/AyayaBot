@@ -7,6 +7,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type Messenger interface {
+	SendMessage(message string) error
+}
+
 type Bot struct {
 	Session   *discordgo.Session
 	ChannelID string

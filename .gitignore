@@ -2,4 +2,4 @@
 *.json
 config.yaml
 log/
-ayayabot.exe
+*.exe
