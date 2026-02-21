@@ -46,6 +46,11 @@ func TestCompareAndNotify(t *testing.T) {
 	if mockBot.Messages[0] == "" {
 		t.Error("Expected message content, got empty string")
 	}
+
+	expectedDate := now.Local().Format("2006-01-02")
+	if !strings.Contains(mockBot.Messages[0], expectedDate) {
+		t.Errorf("Expected message to contain date %s, got: %s", expectedDate, mockBot.Messages[0])
+	}
 }
 
 func TestCompareAndNotify_Order(t *testing.T) {
