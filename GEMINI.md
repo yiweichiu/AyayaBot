@@ -7,8 +7,9 @@
 
 ## 技術架構
 - **語言**: Go (Golang)
-- **主要依賴**: `discordgo` (Discord SDK), `robfig/cron/v3` (排程管理), `yaml.v2` (設定檔)
+- **主要依賴**: `discordgo` (Discord SDK), `robfig/cron/v3` (排程管理), `systray` (工作列管理), `yaml.v2` (設定檔)
 - **目錄結構**:
+  - `assets`: 存放圖示等靜態資源 (如 `icon.ico`)。
   - `config`: 設定檔載入邏輯。
   - `discord`: Discord 機器人連線與訊息發送邏輯。
   - `logger`: 檔案日誌系統，負責初始化與每日定時切換。
@@ -18,18 +19,23 @@
   - `scheduler`: 負責排程管理與具體業務任務的執行 (`RunNewsTask`, `RunRedeemTask`)。
 
 ## 工程標準與慣例 (Mandates)
-1. **命名規範**:
+1. **執行環境規範 (Windows)**:
+   - 程式必須支援以 `windowsgui` 模式編譯 (背景執行，無視窗)。
+   - 必須實作 **單一執行個體檢查 (Single-Instance Check)**：使用 Windows Named Mutex (`Local\AyayaBot-SingleInstance-Mutex`) 防止重複執行。
+   - 若偵測到重複執行，必須呼叫 Windows 原生 `MessageBoxW` 彈窗警告使用者。
+   - 工作列圖示必須使用 `.ico` 格式以確保 Windows 相容性。
+2. **命名規範**:
    - Package 名稱必須為單一單字的小寫格式 (如 `bd2news`, `bd2redeem`, `logger`)，禁止使用底線。
    - 檔案命名應簡潔且與功能直接相關 (如 `client.go`, `news.go`, `logger.go`)。
    - 務必遵循 Golang 的慣用法 (Idiomatic Go)。
-2. **日誌規範**:
+3. **日誌規範**:
    - 系統日誌必須輸出至執行目錄下的 `log/` 資料夾。
    - 檔案命名格式為 `YYYYMMDD.log`。
    - 每日 `00:01` 必須執行日誌切換 (Rotate)，確保日誌按日期妥善分類。
-3. **安全性**:
+4. **安全性**:
    - **嚴禁**將 `config.yaml` 納入 Git 追蹤。
    - 修改 `config` 相關邏輯時，務必確保不洩漏 Token。
-4. **排程邏輯**:
+5. **排程邏輯**:
    - 業務任務 (如抓取、通知) 應定義在 `scheduler` 目錄下的對應檔案中 (如 `RunNewsTask`)。
    - 排程註冊統一在 `main.go` 中透過 `AddJob(spec, func)` 進行。
 
