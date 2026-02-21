@@ -11,6 +11,7 @@
 - **目錄結構**:
   - `config`: 設定檔載入邏輯。
   - `discord`: Discord 機器人連線與訊息發送邏輯。
+  - `logger`: 檔案日誌系統，負責初始化與每日定時切換。
   - `model`: 專案通用的資料結構 (News, Redeem)。
   - `repository/bd2news`: 負責與 BD2 新聞 API 交互。
   - `repository/bd2redeem`: 負責與 BD2 兌換碼 API 交互。
@@ -18,13 +19,17 @@
 
 ## 工程標準與慣例 (Mandates)
 1. **命名規範**:
-   - Package 名稱必須為單一單字的小寫格式 (如 `bd2news`, `bd2redeem`)，禁止使用底線。
-   - 檔案命名應簡潔且與功能直接相關 (如 `client.go`, `news.go`)。
+   - Package 名稱必須為單一單字的小寫格式 (如 `bd2news`, `bd2redeem`, `logger`)，禁止使用底線。
+   - 檔案命名應簡潔且與功能直接相關 (如 `client.go`, `news.go`, `logger.go`)。
    - 務必遵循 Golang 的慣用法 (Idiomatic Go)。
-2. **安全性**:
+2. **日誌規範**:
+   - 系統日誌必須輸出至執行目錄下的 `log/` 資料夾。
+   - 檔案命名格式為 `YYYYMMDD.log`。
+   - 每日 `00:01` 必須執行日誌切換 (Rotate)，確保日誌按日期妥善分類。
+3. **安全性**:
    - **嚴禁**將 `config.yaml` 納入 Git 追蹤。
    - 修改 `config` 相關邏輯時，務必確保不洩漏 Token。
-3. **排程邏輯**:
+4. **排程邏輯**:
    - 業務任務 (如抓取、通知) 應定義在 `scheduler` 目錄下的對應檔案中 (如 `RunNewsTask`)。
    - 排程註冊統一在 `main.go` 中透過 `AddJob(spec, func)` 進行。
 
