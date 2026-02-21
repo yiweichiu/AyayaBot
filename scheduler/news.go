@@ -99,7 +99,9 @@ func compareAndNotify(bot *discord.Bot, oldNews, newNews []model.NewsItem) error
 
 	if len(newAnnouncements) > 0 {
 		log.Printf("Found %d new announcements.", len(newAnnouncements))
-		for _, newAnnc := range newAnnouncements {
+		// Iterate in reverse to send from oldest to newest
+		for i := len(newAnnouncements) - 1; i >= 0; i-- {
+			newAnnc := newAnnouncements[i]
 			message := fmt.Sprintf("📢 **新公告**\n**標題:** %s\n**發佈時間:** %s\n**連結:** https://www.browndust2.com/zh-tw/news?page=0&type=all#%d",
 				newAnnc.Subject, newAnnc.PublishedAt.Format("2006-01-02 15:04"), newAnnc.ID)
 			err := bot.SendMessage(message)
