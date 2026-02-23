@@ -53,6 +53,7 @@ go mod tidy
     *   `discord.token`: 你的 Discord Bot Token (需包含 `Bot ` 前綴)。
     *   `discord.channel_id`: 接收通知的頻道 ID。
     *   `redeem.api.api_key`: BD2 Pulse 的 API Key。
+    *   `redeem.service` / `news.service`: (選填) 設為 `false` 可停用該功能，預設為 `true`。
 
 ### 4. 編譯與執行 (Windows)
 

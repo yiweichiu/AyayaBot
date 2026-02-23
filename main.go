@@ -71,7 +71,7 @@ func showAlert(title, message string) {
 func onReady() {
 	systray.SetIcon(iconData)
 	systray.SetTitle("AyayaBot")
-	systray.SetTooltip("棕色塵埃2 機器人")
+	systray.SetTooltip("AyayaBot")
 
 	mQuit := systray.AddMenuItem("關閉 (Quit)", "停止機器人並結束程式")
 
@@ -103,15 +103,24 @@ func onReady() {
 	s.Start()
 
 	// Add jobs
-	for _, spec := range cfg.News.Schedule {
-		if _, err := s.AddJob(spec, s.RunNewsTask); err != nil {
-			log.Printf("Failed to add news job: %v", err)
+	if cfg.News.Service {
+		for _, spec := range cfg.News.Schedule {
+			if _, err := s.AddJob(spec, s.RunNewsTask); err != nil {
+				log.Printf("Failed to add news job: %v", err)
+			}
 		}
+	} else {
+		log.Println("News service is disabled.")
 	}
-	for _, spec := range cfg.Redeem.Schedule {
-		if _, err := s.AddJob(spec, s.RunRedeemTask); err != nil {
-			log.Printf("Failed to add redeem job: %v", err)
+
+	if cfg.Redeem.Service {
+		for _, spec := range cfg.Redeem.Schedule {
+			if _, err := s.AddJob(spec, s.RunRedeemTask); err != nil {
+				log.Printf("Failed to add redeem job: %v", err)
+			}
 		}
+	} else {
+		log.Println("Redeem service is disabled.")
 	}
 	if _, err := s.AddJob("1 0 * * *", func() {
 		if err := logger.Rotate(); err != nil {

@@ -38,6 +38,7 @@
 5. **排程邏輯**:
    - 業務任務 (如抓取、通知) 應定義在 `scheduler` 目錄下的對應檔案中 (如 `RunNewsTask`)。
    - 排程註冊統一在 `main.go` 中透過 `AddJob(spec, func)` 進行。
+   - **功能開關**: 所有功能模組 (如 News, Redeem) 必須支援透過 `config.yaml` 內的 `service: bool` 欄位控制啟動，且為確保向下相容性，該欄位在讀取失敗或不存在時應預設為 `true`。
    - **新聞通知順序**: 為了符合閱讀習慣，偵測到多筆新公告時，必須按發佈時間「由舊到新」傳送 (即對 `FetchNews` 回傳的降序列表進行反向遍歷)。
 6. **測試規範 (Testing)**:
    - 所有外部 API 交互 (Repository 層) 必須具備使用 `httptest` 模擬回應的整合測試。

@@ -99,8 +99,8 @@ func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem) 
 		// Iterate in reverse to send from oldest to newest
 		for i := len(newAnnouncements) - 1; i >= 0; i-- {
 			newAnnc := newAnnouncements[i]
-			message := fmt.Sprintf("📢 **[新公告](https://www.browndust2.com/zh-tw/news/view?id=%d)**\n**%s**\n%s",
-				newAnnc.ID, newAnnc.Subject, newAnnc.PublishedAt.Local().Format("2006-01-02"))
+			message := fmt.Sprintf("📢 **[新公告](https://www.browndust2.com/zh-tw/news/view?id=%d) %s**\n**%s**",
+				newAnnc.ID, newAnnc.PublishedAt.Local().Format("2006-01-02"), newAnnc.Subject)
 			err := bot.SendMessage(message)
 			if err != nil {
 				log.Printf("Error sending Discord message for new announcement %d: %v", newAnnc.ID, err)

@@ -2,6 +2,7 @@ discord:
   token: "YOUR_DISCORD_BOT_TOKEN_HERE"
   channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"
 redeem:
+  service: true
   api:
     url: "https://api.thebd2pulse.com/redeem"
     api_key: "YOUR_REDEEM_API_KEY_HERE"
@@ -9,6 +10,7 @@ redeem:
     - "0 8 * * *"
     - "0 18 * * *"
 news:
+  service: true
   api:
     url: "https://www.browndust2.com/api/newsData_tw.json"
   schedule:
