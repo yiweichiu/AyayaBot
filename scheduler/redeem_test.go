@@ -42,7 +42,7 @@ func TestProcessRedeemTask(t *testing.T) {
 		}
 	}()
 
-	err := processRedeemTask(mockBot, fetchedCodes, previouslySent, false)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestProcessRedeemTask_HideEmbed(t *testing.T) {
 		}
 	}()
 
-	err := processRedeemTask(mockBot, fetchedCodes, previouslySent, true)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, true)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestProcessRedeemTask_NoNewCodes(t *testing.T) {
 	}
 	previouslySent := []string{"OLD_CODE"}
 
-	err := processRedeemTask(mockBot, fetchedCodes, previouslySent, false)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}

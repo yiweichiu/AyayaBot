@@ -51,8 +51,8 @@ go mod tidy
     ```
 2.  編輯 `config.yaml` 並填入你的真實資訊：
     *   `discord.token`: 你的 Discord Bot Token (需包含 `Bot ` 前綴)。
-    *   `discord.channel_id`: 接收通知的頻道 ID。
-    *   `redeem.api.api_key`: BD2 Pulse 的 API Key。
+    *   `discord.channels`: 定義多個頻道，每個頻道包含 `name` (名稱) 與 `id` (頻道 ID)。
+    *   `redeem.channel` / `news.channel`: 指定該服務要發送到的頻道 `name`。**若未指定有效的頻道名稱，該服務將自動停用。**
     *   `redeem.service` / `news.service`: (選填) 設為 `false` 可停用該功能，預設為 `true`。
     *   `redeem.hide_embed` / `news.hide_embed`: (選填) 設為 `true` 可隱藏 Discord 連結預覽 (嵌入內容)，預設為 `false`。
     *   `news.send_content`: (選填) 設為 `true` 可在通知中傳送新聞內容，預設為 `false`。

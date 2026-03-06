@@ -84,7 +84,7 @@ func onReady() {
 	}
 
 	// Create bot
-	discordBot, err := discord.NewBot(cfg.Discord.Token, cfg.Discord.ChannelID)
+	discordBot, err := discord.NewBot(cfg.Discord.Token)
 	if err != nil {
 		log.Printf("Failed to create Discord bot: %v", err)
 		systray.Quit()
@@ -103,24 +103,24 @@ func onReady() {
 	s.Start()
 
 	// Add jobs
-	if cfg.News.Service {
+	if cfg.News.Service && s.GetChannelID(cfg.News.Channel) != "" {
 		for _, spec := range cfg.News.Schedule {
 			if _, err := s.AddJob(spec, s.RunNewsTask); err != nil {
 				log.Printf("Failed to add news job: %v", err)
 			}
 		}
 	} else {
-		log.Println("News service is disabled.")
+		log.Printf("News service is disabled or channel %s not found.", cfg.News.Channel)
 	}
 
-	if cfg.Redeem.Service {
+	if cfg.Redeem.Service && s.GetChannelID(cfg.Redeem.Channel) != "" {
 		for _, spec := range cfg.Redeem.Schedule {
 			if _, err := s.AddJob(spec, s.RunRedeemTask); err != nil {
 				log.Printf("Failed to add redeem job: %v", err)
 			}
 		}
 	} else {
-		log.Println("Redeem service is disabled.")
+		log.Printf("Redeem service is disabled or channel %s not found.", cfg.Redeem.Channel)
 	}
 	if _, err := s.AddJob("1 0 * * *", func() {
 		if err := logger.Rotate(); err != nil {

@@ -17,10 +17,17 @@ const redeemFilePath = "redeem.json"
 // RunRedeemTask executes the full flow of fetching and notifying redeem codes.
 func (s *Scheduler) RunRedeemTask() {
 	log.Println("Fetching redeem codes...")
+
+	channelID := s.GetChannelID(s.Config.Redeem.Channel)
+	if channelID == "" {
+		log.Printf("Error: Channel %s not found for redeem task", s.Config.Redeem.Channel)
+		return
+	}
+
 	fetchedCodesInfo, err := bd2redeem.GetRedeemCodes(s.Config.Redeem.API.URL, s.Config.Redeem.API.APIKey)
 	if err != nil {
 		log.Printf("Failed to fetch redeem codes: %v", err)
-		sendErr := s.DiscordBot.SendMessage(fmt.Sprintf("Failed to fetch redeem codes: %v", err))
+		sendErr := s.DiscordBot.SendMessage(channelID, fmt.Sprintf("Failed to fetch redeem codes: %v", err))
 		if sendErr != nil {
 			log.Printf("Error sending message about failed redeem code fetch: %v", sendErr)
 		}
@@ -32,14 +39,14 @@ func (s *Scheduler) RunRedeemTask() {
 		log.Printf("Error loading previously sent redeem codes: %v", err)
 	}
 
-	err = processRedeemTask(s.DiscordBot, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed)
+	err = processRedeemTask(s.DiscordBot, channelID, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed)
 	if err != nil {
 		log.Printf("Error processing redeem task: %v", err)
 	}
 }
 
 // processRedeemTask handles the comparison, notification, and saving logic for redeem codes.
-func processRedeemTask(bot discord.Messenger, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool) error {
+func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool) error {
 	sentCodesMap := make(map[string]bool)
 	for _, code := range previouslySentCodes {
 		sentCodesMap[code] = true
@@ -61,10 +68,10 @@ func processRedeemTask(bot discord.Messenger, fetchedCodesInfo []model.RedeemCod
 			redeemURL = "<" + redeemURL + ">"
 		}
 		message := fmt.Sprintf("📢 **[新兌換碼](%s)**\n%s", redeemURL, strings.Join(newMessages, "\n"))
-		if err := bot.SendMessage(message); err != nil {
-			return fmt.Errorf("failed to send new redeem codes to Discord: %w", err)
+		if err := bot.SendMessage(channelID, message); err != nil {
+			return fmt.Errorf("failed to send new redeem codes to Discord channel %s: %w", channelID, err)
 		}
-		log.Printf("Sent %d new redeem codes to Discord.", len(newMessages))
+		log.Printf("Sent %d new redeem codes to Discord channel %s.", len(newMessages), channelID)
 	} else {
 		log.Println("No new redeem codes available.")
 	}

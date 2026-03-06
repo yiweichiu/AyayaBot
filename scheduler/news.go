@@ -17,6 +17,12 @@ import (
 func (s *Scheduler) RunNewsTask() {
 	log.Println("Executing news fetch job...")
 
+	channelID := s.GetChannelID(s.Config.News.Channel)
+	if channelID == "" {
+		log.Printf("Error: Channel %s not found for news task", s.Config.News.Channel)
+		return
+	}
+
 	newNews, err := bd2news.FetchNews(s.Config.News.API.URL)
 	if err != nil {
 		log.Printf("Error fetching news: %v", err)
@@ -35,7 +41,7 @@ func (s *Scheduler) RunNewsTask() {
 		oldNews = []model.NewsItem{}
 	}
 
-	err = compareAndNotify(s.DiscordBot, oldNews, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed)
+	err = compareAndNotify(s.DiscordBot, channelID, oldNews, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed)
 	if err != nil {
 		log.Printf("Error comparing and notifying news: %v", err)
 	}
@@ -82,7 +88,7 @@ func saveNewsToFile(newsItems []model.NewsItem) error {
 }
 
 // compareAndNotify compares old and new news items and sends notifications for new ones.
-func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem, sendContent bool, hideEmbed bool) error {
+func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews []model.NewsItem, sendContent bool, hideEmbed bool) error {
 	oldNewsMap := make(map[int]struct{})
 	for _, item := range oldNews {
 		oldNewsMap[item.ID] = struct{}{}
@@ -121,9 +127,9 @@ func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem, 
 				message += fmt.Sprintf("\n%s\n", content)
 			}
 
-			err := bot.SendMessage(message)
+			err := bot.SendMessage(channelID, message)
 			if err != nil {
-				log.Printf("Error sending Discord message for new announcement %d: %v", newAnnc.ID, err)
+				log.Printf("Error sending Discord message for new announcement %d to channel %s: %v", newAnnc.ID, channelID, err)
 			}
 			time.Sleep(1 * time.Second) // Avoid hitting Discord rate limits
 		}

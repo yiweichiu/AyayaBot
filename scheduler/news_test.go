@@ -14,7 +14,7 @@ type MockMessenger struct {
 	Messages []string
 }
 
-func (m *MockMessenger) SendMessage(message string) error {
+func (m *MockMessenger) SendMessage(channelID, message string) error {
 	m.Messages = append(m.Messages, message)
 	return nil
 }
@@ -22,6 +22,7 @@ func (m *MockMessenger) SendMessage(message string) error {
 func TestCompareAndNotify(t *testing.T) {
 	mockBot := &MockMessenger{}
 	now := time.Now()
+	channelID := "test-channel"
 
 	oldNews := []model.NewsItem{
 		{ID: 1, Subject: "Old News 1", PublishedAt: now.Add(-2 * time.Hour)},
@@ -34,7 +35,7 @@ func TestCompareAndNotify(t *testing.T) {
 		{ID: 1, Subject: "Old News 1", PublishedAt: now.Add(-2 * time.Hour)},
 	}
 
-	err := compareAndNotify(mockBot, oldNews, newNews, false, false)
+	err := compareAndNotify(mockBot, channelID, oldNews, newNews, false, false)
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestCompareAndNotify_HideEmbed(t *testing.T) {
 		{ID: 1, Subject: "News 1", PublishedAt: now},
 	}
 
-	err := compareAndNotify(mockBot, oldNews, newNews, false, true)
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true)
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -85,7 +86,7 @@ func TestCompareAndNotify_WithContent(t *testing.T) {
 		{ID: 1, Subject: "News 1", PublishedAt: now, Content: "This is the content"},
 	}
 
-	err := compareAndNotify(mockBot, oldNews, newNews, true, true)
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, true, true)
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -109,7 +110,7 @@ func TestCompareAndNotify_Order(t *testing.T) {
 		{ID: 1, Subject: "News 1 (Older)", PublishedAt: now.Add(-1 * time.Hour)},
 	}
 
-	err := compareAndNotify(mockBot, oldNews, newNews, false, true)
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true)
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}

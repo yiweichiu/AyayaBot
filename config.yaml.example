@@ -1,8 +1,13 @@
 discord:
   token: "YOUR_DISCORD_BOT_TOKEN_HERE"
-  channel_id: "YOUR_DISCORD_CHANNEL_ID_HERE"
+  channels:
+    - name: "general"
+      id: "YOUR_DISCORD_CHANNEL_ID_HERE"
+    - name: "news"
+      id: "ANOTHER_CHANNEL_ID_HERE"
 redeem:
   service: true
+  channel: "general"
   hide_embed: true
   api:
     url: "https://api.thebd2pulse.com/redeem"
@@ -12,6 +17,7 @@ redeem:
     - "0 18 * * *"
 news:
   service: true
+  channel: "news"
   send_content: false
   hide_embed: true
   api:

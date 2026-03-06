@@ -8,23 +8,21 @@ import (
 )
 
 type Messenger interface {
-	SendMessage(message string) error
+	SendMessage(channelID, message string) error
 }
 
 type Bot struct {
-	Session   *discordgo.Session
-	ChannelID string
+	Session *discordgo.Session
 }
 
-func NewBot(token, channelID string) (*Bot, error) {
+func NewBot(token string) (*Bot, error) {
 	session, err := discordgo.New(token)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Discord session: %w", err)
 	}
 
 	return &Bot{
-		Session:   session,
-		ChannelID: channelID,
+		Session: session,
 	}, nil
 }
 
@@ -42,11 +40,11 @@ func (b *Bot) Stop() {
 	log.Println("Discord bot stopped.")
 }
 
-func (b *Bot) SendMessage(message string) error {
-	_, err := b.Session.ChannelMessageSend(b.ChannelID, message)
+func (b *Bot) SendMessage(channelID, message string) error {
+	_, err := b.Session.ChannelMessageSend(channelID, message)
 	if err != nil {
-		return fmt.Errorf("error sending message to Discord: %w", err)
+		return fmt.Errorf("error sending message to Discord channel %s: %w", channelID, err)
 	}
-	log.Printf("Message sent to Discord channel %s: %s\n", b.ChannelID, message)
+	log.Printf("Message sent to Discord channel %s\n", channelID)
 	return nil
 }
