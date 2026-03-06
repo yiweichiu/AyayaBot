@@ -1,6 +1,7 @@
 package bd2redeem
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +13,8 @@ import (
 )
 
 func TestGetRedeemCodes(t *testing.T) {
-	// 模擬 API 回應資料
+	// ... (rest of the setup)
+
 	tomorrow := time.Now().Add(24 * time.Hour).Format("2006/01/02")
 	yesterday := time.Now().Add(-24 * time.Hour).Format("2006/01/02")
 
@@ -53,7 +55,7 @@ func TestGetRedeemCodes(t *testing.T) {
 	defer server.Close()
 
 	// 執行測試
-	codes, err := GetRedeemCodes(server.URL, "test-api-key")
+	codes, err := GetRedeemCodes(context.Background(), server.URL, "test-api-key")
 
 	// 驗證結果
 	if err != nil {
@@ -89,7 +91,7 @@ func TestGetRedeemCodes_Unauthorized(t *testing.T) {
 	}))
 	defer server.Close()
 
-	codes, err := GetRedeemCodes(server.URL, "wrong-key")
+	codes, err := GetRedeemCodes(context.Background(), server.URL, "wrong-key")
 	if err == nil {
 		t.Fatal("Expected error for unauthorized status, got nil")
 	}

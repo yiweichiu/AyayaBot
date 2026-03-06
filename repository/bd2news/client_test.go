@@ -1,6 +1,7 @@
 package bd2news
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +13,8 @@ import (
 )
 
 func TestFetchNews(t *testing.T) {
-	// 模擬 API 回應資料
+	// ... (rest of the setup)
+
 	now := time.Now()
 	mockResponse := model.NewsAPIResponse{}
 	
@@ -64,7 +66,7 @@ func TestFetchNews(t *testing.T) {
 	defer server.Close()
 
 	// 執行被測試函式
-	news, err := FetchNews(server.URL)
+	news, err := FetchNews(context.Background(), server.URL)
 
 	// 驗證結果
 	if err != nil {
@@ -91,7 +93,7 @@ func TestFetchNews_APIError(t *testing.T) {
 	defer server.Close()
 
 	// 執行並驗證錯誤
-	news, err := FetchNews(server.URL)
+	news, err := FetchNews(context.Background(), server.URL)
 	if err == nil {
 		t.Fatal("Expected error for 500 status, got nil")
 	}

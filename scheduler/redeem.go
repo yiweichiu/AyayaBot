@@ -1,11 +1,13 @@
 package scheduler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/yiweichiu/AyayaBot/discord"
 	"github.com/yiweichiu/AyayaBot/model"
@@ -22,7 +24,10 @@ func (s *Scheduler) RunRedeemTask() {
 		return
 	}
 
-	fetchedCodesInfo, err := bd2redeem.GetRedeemCodes(s.Config.Redeem.API.URL, s.Config.Redeem.API.APIKey)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	fetchedCodesInfo, err := bd2redeem.GetRedeemCodes(ctx, s.Config.Redeem.API.URL, s.Config.Redeem.API.APIKey)
 	if err != nil {
 		log.Printf("Failed to fetch redeem codes: %v", err)
 		sendErr := s.DiscordBot.SendMessage(channelID, fmt.Sprintf("Failed to fetch redeem codes: %v", err))

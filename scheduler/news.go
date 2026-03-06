@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -23,7 +24,10 @@ func (s *Scheduler) RunNewsTask() {
 		return
 	}
 
-	newNews, err := bd2news.FetchNews(s.Config.News.API.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	newNews, err := bd2news.FetchNews(ctx, s.Config.News.API.URL)
 	if err != nil {
 		log.Printf("Error fetching news: %v", err)
 		return

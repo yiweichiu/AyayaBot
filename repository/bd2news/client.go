@@ -1,6 +1,7 @@
 package bd2news
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,8 +12,13 @@ import (
 )
 
 // FetchNews fetches news from the given API URL and returns the latest 10 items.
-func FetchNews(apiURL string) ([]model.NewsItem, error) {
-	resp, err := http.Get(apiURL)
+func FetchNews(ctx context.Context, apiURL string) ([]model.NewsItem, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch news from API: %w", err)
 	}

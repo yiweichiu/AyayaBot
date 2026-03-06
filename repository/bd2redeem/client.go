@@ -1,6 +1,7 @@
 package bd2redeem
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,9 +13,9 @@ import (
 )
 
 // GetRedeemCodes fetches redeem codes from the BD2 Pulse API.
-func GetRedeemCodes(apiURL, apiKey string) ([]model.RedeemCodeInfo, error) {
+func GetRedeemCodes(ctx context.Context, apiURL, apiKey string) ([]model.RedeemCodeInfo, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
