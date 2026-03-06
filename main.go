@@ -40,16 +40,13 @@ const (
 func main() {
 	// Check for single instance using Windows Named Mutex
 	mutexName, _ := syscall.UTF16PtrFromString("Local\\AyayaBot-SingleInstance-Mutex")
-	// ret is the handle to the mutex; we need to keep it alive during program execution
 	ret, _, err := procCreateMutex.Call(0, 0, uintptr(unsafe.Pointer(mutexName)))
 	if err != nil && err.(syscall.Errno) == errorAlreadyExists {
 		showAlert("AyayaBot", "程式已經在運行中！\n請檢查系統工作列。")
 		return
 	}
-	// Prevent GC from collecting 'ret' handle if it were a managed object
-	// In this case, 'ret' is a uintptr, so it stays alive as long as it's in scope.
 	defer func(h uintptr) {
-		// Optional: CloseHandle if needed, but the OS cleans up on exit
+		// handle cleanup if needed
 	}(ret)
 
 	// Initialize logger
@@ -58,7 +55,6 @@ func main() {
 	}
 	defer logger.Close()
 
-	// Use systray.Run to manage life cycle
 	systray.Run(onReady, onExit)
 }
 
@@ -69,13 +65,9 @@ func showAlert(title, message string) {
 }
 
 func onReady() {
-	systray.SetIcon(iconData)
-	systray.SetTitle("AyayaBot")
-	systray.SetTooltip("AyayaBot")
-
+	setupSystray()
 	mQuit := systray.AddMenuItem("關閉 (Quit)", "停止機器人並結束程式")
 
-	// Load config
 	cfg, err := config.LoadConfig("config.yaml")
 	if err != nil {
 		log.Printf("Failed to load config: %v", err)
@@ -83,26 +75,49 @@ func onReady() {
 		return
 	}
 
-	// Create bot
-	discordBot, err := discord.NewBot(cfg.Discord.Token)
+	bot, err := setupDiscord(cfg)
 	if err != nil {
-		log.Printf("Failed to create Discord bot: %v", err)
+		log.Printf("Failed to setup Discord: %v", err)
 		systray.Quit()
 		return
 	}
+	globalBot = bot
 
-	// Start bot
-	if err := discordBot.Start(); err != nil {
-		log.Printf("Failed to start Discord bot: %v", err)
+	s, err := setupScheduler(cfg, bot)
+	if err != nil {
+		log.Printf("Failed to setup Scheduler: %v", err)
 		systray.Quit()
 		return
 	}
+	globalScheduler = s
 
-	// Scheduler
-	s := scheduler.NewScheduler(cfg, discordBot)
+	setupSignals(mQuit)
+	log.Println("AyayaBot is running in background.")
+}
+
+func setupSystray() {
+	systray.SetIcon(iconData)
+	systray.SetTitle("AyayaBot")
+	systray.SetTooltip("AyayaBot")
+}
+
+func setupDiscord(cfg *config.Config) (*discord.Bot, error) {
+	bot, err := discord.NewBot(cfg.Discord.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := bot.Start(); err != nil {
+		return nil, err
+	}
+	return bot, nil
+}
+
+func setupScheduler(cfg *config.Config, bot *discord.Bot) (*scheduler.Scheduler, error) {
+	s := scheduler.NewScheduler(cfg, bot)
 	s.Start()
 
-	// Add jobs
+	// Register News jobs
 	if cfg.News.Service && s.GetChannelID(cfg.News.Channel) != "" {
 		for _, spec := range cfg.News.Schedule {
 			if _, err := s.AddJob(spec, s.RunNewsTask); err != nil {
@@ -113,6 +128,7 @@ func onReady() {
 		log.Printf("News service is disabled or channel %s not found.", cfg.News.Channel)
 	}
 
+	// Register Redeem jobs
 	if cfg.Redeem.Service && s.GetChannelID(cfg.Redeem.Channel) != "" {
 		for _, spec := range cfg.Redeem.Schedule {
 			if _, err := s.AddJob(spec, s.RunRedeemTask); err != nil {
@@ -122,6 +138,8 @@ func onReady() {
 	} else {
 		log.Printf("Redeem service is disabled or channel %s not found.", cfg.Redeem.Channel)
 	}
+
+	// Register Log rotation job
 	if _, err := s.AddJob("1 0 * * *", func() {
 		if err := logger.Rotate(); err != nil {
 			log.Printf("Failed to rotate log: %v", err)
@@ -130,13 +148,10 @@ func onReady() {
 		log.Printf("Failed to add log rotation job: %v", err)
 	}
 
-	log.Println("AyayaBot is running in background.")
+	return s, nil
+}
 
-	// Global assignments for cleanup
-	globalBot = discordBot
-	globalScheduler = s
-
-	// Listen for signals and menu items in background
+func setupSignals(mQuit *systray.MenuItem) {
 	go func() {
 		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)

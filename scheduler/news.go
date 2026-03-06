@@ -121,10 +121,8 @@ func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews 
 					log.Printf("Error converting HTML to Markdown for news %d: %v", newAnnc.ID, err)
 					content = newAnnc.Content // Fallback to raw content if conversion fails
 				}
-				// Simple truncation for Discord limit (2000 chars), using 1800 to be safe with header
-				if len(content) > 1800 {
-					content = content[:1800] + "..."
-				}
+				// Use TruncateString for safe UTF-8 and Markdown-aware truncation
+				content = TruncateString(content, 1800)
 				message += fmt.Sprintf("\n%s\n", content)
 			}
 
