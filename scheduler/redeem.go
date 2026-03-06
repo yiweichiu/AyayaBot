@@ -32,14 +32,14 @@ func (s *Scheduler) RunRedeemTask() {
 		log.Printf("Error loading previously sent redeem codes: %v", err)
 	}
 
-	err = processRedeemTask(s.DiscordBot, fetchedCodesInfo, previouslySentCodes)
+	err = processRedeemTask(s.DiscordBot, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed)
 	if err != nil {
 		log.Printf("Error processing redeem task: %v", err)
 	}
 }
 
 // processRedeemTask handles the comparison, notification, and saving logic for redeem codes.
-func processRedeemTask(bot discord.Messenger, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string) error {
+func processRedeemTask(bot discord.Messenger, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool) error {
 	sentCodesMap := make(map[string]bool)
 	for _, code := range previouslySentCodes {
 		sentCodesMap[code] = true
@@ -56,7 +56,11 @@ func processRedeemTask(bot discord.Messenger, fetchedCodesInfo []model.RedeemCod
 	}
 
 	if len(newMessages) > 0 {
-		message := fmt.Sprintf("📢 **[新兌換碼](https://thebd2pulse.com/)**\n%s", strings.Join(newMessages, "\n"))
+		redeemURL := "https://thebd2pulse.com/"
+		if hideEmbed {
+			redeemURL = "<" + redeemURL + ">"
+		}
+		message := fmt.Sprintf("📢 **[新兌換碼](%s)**\n%s", redeemURL, strings.Join(newMessages, "\n"))
 		if err := bot.SendMessage(message); err != nil {
 			return fmt.Errorf("failed to send new redeem codes to Discord: %w", err)
 		}

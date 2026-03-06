@@ -42,7 +42,7 @@ func TestProcessRedeemTask(t *testing.T) {
 		}
 	}()
 
-	err := processRedeemTask(mockBot, fetchedCodes, previouslySent)
+	err := processRedeemTask(mockBot, fetchedCodes, previouslySent, false)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
@@ -56,6 +56,10 @@ func TestProcessRedeemTask(t *testing.T) {
 		t.Errorf("Expected message to contain NEW_CODE_1, got: %s", mockBot.Messages[0])
 	}
 
+	if strings.Contains(mockBot.Messages[0], "(<https://thebd2pulse.com/>)") {
+		t.Errorf("Message should contain visible URL, got: %s", mockBot.Messages[0])
+	}
+
 	if strings.Contains(mockBot.Messages[0], "OLD_CODE") {
 		t.Error("Message should not contain OLD_CODE")
 	}
@@ -67,6 +71,38 @@ func TestProcessRedeemTask(t *testing.T) {
 	}
 	if len(savedCodes) != 2 {
 		t.Errorf("Expected 2 saved codes, got %d", len(savedCodes))
+	}
+}
+
+func TestProcessRedeemTask_HideEmbed(t *testing.T) {
+	mockBot := &MockMessenger{}
+	fetchedCodes := []model.RedeemCodeInfo{
+		{Code: "NEW_CODE_1", Reward: "Reward 1"},
+	}
+	previouslySent := []string{}
+
+	// 不需要真的測試檔案儲存，但為了符合函式行為，我們還是得備份
+	originalFileName := redeemFilePath
+	backupName := "redeem.json.bak"
+	hasBackup := false
+	if _, err := os.Stat(originalFileName); err == nil {
+		os.Rename(originalFileName, backupName)
+		hasBackup = true
+	}
+	defer func() {
+		os.Remove(originalFileName)
+		if hasBackup {
+			os.Rename(backupName, originalFileName)
+		}
+	}()
+
+	err := processRedeemTask(mockBot, fetchedCodes, previouslySent, true)
+	if err != nil {
+		t.Fatalf("processRedeemTask failed: %v", err)
+	}
+
+	if !strings.Contains(mockBot.Messages[0], "(<https://thebd2pulse.com/>)") {
+		t.Errorf("Message should contain hidden URL: %s", mockBot.Messages[0])
 	}
 }
 
@@ -91,7 +127,7 @@ func TestProcessRedeemTask_NoNewCodes(t *testing.T) {
 	}
 	previouslySent := []string{"OLD_CODE"}
 
-	err := processRedeemTask(mockBot, fetchedCodes, previouslySent)
+	err := processRedeemTask(mockBot, fetchedCodes, previouslySent, false)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}

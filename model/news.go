@@ -19,17 +19,18 @@ type NewsAPIResponse struct {
 	} `json:"data"`
 	Meta struct {
 		Pagination struct {
-			Page    int `json:"page"`
-			PageSize int `json:"pageSize"`
+			Page      int `json:"page"`
+			PageSize  int `json:"pageSize"`
 			PageCount int `json:"pageCount"`
-			Total   int `json:"total"`
+			Total     int `json:"total"`
 		} `json:"pagination"`
 	} `json:"meta"`
 }
 
 // NewsItem represents a simplified structure of a single news item for storage and comparison.
 type NewsItem struct {
-	ID        int       `json:"id"`
-	Subject   string    `json:"subject"`
+	ID          int       `json:"id"`
+	Subject     string    `json:"subject"`
 	PublishedAt time.Time `json:"publishedAt"`
+	Content     string    `json:"content"`
 }

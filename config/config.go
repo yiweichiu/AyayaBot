@@ -8,8 +8,9 @@ import (
 
 // RedeemConfig holds configuration for the redeem functionality.
 type RedeemConfig struct {
-	Service bool `yaml:"service"`
-	API     struct {
+	Service   bool `yaml:"service"`
+	HideEmbed bool `yaml:"hide_embed"`
+	API       struct {
 		URL    string `yaml:"url"`
 		APIKey string `yaml:"api_key"`
 	} `yaml:"api"`
@@ -18,8 +19,10 @@ type RedeemConfig struct {
 
 // NewsConfig holds configuration for the news fetching functionality.
 type NewsConfig struct {
-	Service bool `yaml:"service"`
-	API     struct { // New nested struct
+	Service     bool `yaml:"service"`
+	SendContent bool `yaml:"send_content"`
+	HideEmbed   bool `yaml:"hide_embed"`
+	API         struct { // New nested struct
 		URL string `yaml:"url"`
 	} `yaml:"api"`
 	Schedule []string `yaml:"schedule"` // e.g., ["0 8 * * *", "0 12 * * *"]

@@ -36,9 +36,10 @@ func FetchNews(apiURL string) ([]model.NewsItem, error) {
 	var newsItems []model.NewsItem
 	for _, data := range apiResponse.Data {
 		newsItems = append(newsItems, model.NewsItem{
-			ID:        data.ID,
-			Subject:   data.Attributes.Subject,
+			ID:          data.ID,
+			Subject:     data.Attributes.Subject,
 			PublishedAt: data.Attributes.PublishedAt,
+			Content:     data.Attributes.NewContent,
 		})
 	}
 

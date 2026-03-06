@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/yiweichiu/AyayaBot/discord"
 	"github.com/yiweichiu/AyayaBot/model" // Import model package
 	"github.com/yiweichiu/AyayaBot/repository/bd2news"
@@ -34,7 +35,7 @@ func (s *Scheduler) RunNewsTask() {
 		oldNews = []model.NewsItem{}
 	}
 
-	err = compareAndNotify(s.DiscordBot, oldNews, newNews)
+	err = compareAndNotify(s.DiscordBot, oldNews, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed)
 	if err != nil {
 		log.Printf("Error comparing and notifying news: %v", err)
 	}
@@ -81,7 +82,7 @@ func saveNewsToFile(newsItems []model.NewsItem) error {
 }
 
 // compareAndNotify compares old and new news items and sends notifications for new ones.
-func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem) error {
+func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem, sendContent bool, hideEmbed bool) error {
 	oldNewsMap := make(map[int]struct{})
 	for _, item := range oldNews {
 		oldNewsMap[item.ID] = struct{}{}
@@ -99,8 +100,27 @@ func compareAndNotify(bot discord.Messenger, oldNews, newNews []model.NewsItem) 
 		// Iterate in reverse to send from oldest to newest
 		for i := len(newAnnouncements) - 1; i >= 0; i-- {
 			newAnnc := newAnnouncements[i]
-			message := fmt.Sprintf("📢 **[新公告](https://www.browndust2.com/zh-tw/news/view?id=%d) %s**\n**%s**",
-				newAnnc.ID, newAnnc.PublishedAt.Local().Format("2006-01-02"), newAnnc.Subject)
+			newsURL := fmt.Sprintf("https://www.browndust2.com/zh-tw/news/view?id=%d", newAnnc.ID)
+			if hideEmbed {
+				newsURL = "<" + newsURL + ">"
+			}
+
+			message := fmt.Sprintf("📢 **[新公告](%s) %s**\n**%s**\n",
+				newsURL, newAnnc.PublishedAt.Local().Format("2006-01-02"), newAnnc.Subject)
+
+			if sendContent && newAnnc.Content != "" {
+				content, err := htmltomarkdown.ConvertString(newAnnc.Content)
+				if err != nil {
+					log.Printf("Error converting HTML to Markdown for news %d: %v", newAnnc.ID, err)
+					content = newAnnc.Content // Fallback to raw content if conversion fails
+				}
+				// Simple truncation for Discord limit (2000 chars), using 1800 to be safe with header
+				if len(content) > 1800 {
+					content = content[:1800] + "..."
+				}
+				message += fmt.Sprintf("\n%s\n", content)
+			}
+
 			err := bot.SendMessage(message)
 			if err != nil {
 				log.Printf("Error sending Discord message for new announcement %d: %v", newAnnc.ID, err)
