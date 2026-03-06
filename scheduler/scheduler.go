@@ -45,10 +45,8 @@ func (s *Scheduler) Stop() {
 
 // GetChannelID returns the Discord channel ID for the given channel name from config.
 func (s *Scheduler) GetChannelID(name string) string {
-	for _, ch := range s.Config.Discord.Channels {
-		if ch.Name == name {
-			return ch.ID
-		}
+	if s.Config.ChannelMap == nil {
+		return ""
 	}
-	return ""
+	return s.Config.ChannelMap[name]
 }

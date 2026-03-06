@@ -14,10 +14,11 @@ type ChannelConfig struct {
 
 // RedeemConfig holds configuration for the redeem functionality.
 type RedeemConfig struct {
-	Service   bool   `yaml:"service"`
-	Channel   string `yaml:"channel"`
-	HideEmbed bool   `yaml:"hide_embed"`
-	API       struct {
+	Service     bool   `yaml:"service"`
+	Channel     string `yaml:"channel"`
+	StoragePath string `yaml:"storage_path"`
+	HideEmbed   bool   `yaml:"hide_embed"`
+	API         struct {
 		URL    string `yaml:"url"`
 		APIKey string `yaml:"api_key"`
 	} `yaml:"api"`
@@ -28,6 +29,7 @@ type RedeemConfig struct {
 type NewsConfig struct {
 	Service     bool   `yaml:"service"`
 	Channel     string `yaml:"channel"`
+	StoragePath string `yaml:"storage_path"`
 	SendContent bool   `yaml:"send_content"`
 	HideEmbed   bool   `yaml:"hide_embed"`
 	API         struct { // New nested struct
@@ -42,8 +44,9 @@ type Config struct {
 		Token    string          `yaml:"token"`
 		Channels []ChannelConfig `yaml:"channels"`
 	} `yaml:"discord"`
-	Redeem RedeemConfig `yaml:"redeem"`
-	News   NewsConfig   `yaml:"news"`
+	Redeem     RedeemConfig      `yaml:"redeem"`
+	News       NewsConfig        `yaml:"news"`
+	ChannelMap map[string]string // Computed for O(1) lookup
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -55,24 +58,26 @@ func LoadConfig(configPath string) (*Config, error) {
 	// Set default values for backward compatibility
 	config := Config{}
 	config.Redeem.Service = true
+	config.Redeem.StoragePath = "redeem.json"
 	config.News.Service = true
+	config.News.StoragePath = "news.json"
 
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a map of channel names to IDs for easy lookup
-	channelMap := make(map[string]string)
+	// Create a map of channel names to IDs for O(1) lookup
+	config.ChannelMap = make(map[string]string)
 	for _, ch := range config.Discord.Channels {
-		channelMap[ch.Name] = ch.ID
+		config.ChannelMap[ch.Name] = ch.ID
 	}
 
 	// Validation: If a service's channel is not found, disable the service
-	if _, exists := channelMap[config.Redeem.Channel]; !exists {
+	if _, exists := config.ChannelMap[config.Redeem.Channel]; !exists {
 		config.Redeem.Service = false
 	}
-	if _, exists := channelMap[config.News.Channel]; !exists {
+	if _, exists := config.ChannelMap[config.News.Channel]; !exists {
 		config.News.Service = false
 	}
 

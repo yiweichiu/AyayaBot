@@ -12,8 +12,6 @@ import (
 	"github.com/yiweichiu/AyayaBot/repository/bd2redeem"
 )
 
-const redeemFilePath = "redeem.json"
-
 // RunRedeemTask executes the full flow of fetching and notifying redeem codes.
 func (s *Scheduler) RunRedeemTask() {
 	log.Println("Fetching redeem codes...")
@@ -34,19 +32,19 @@ func (s *Scheduler) RunRedeemTask() {
 		return
 	}
 
-	previouslySentCodes, err := loadRedeemCodesFromFile(redeemFilePath)
+	previouslySentCodes, err := loadRedeemCodesFromFile(s.Config.Redeem.StoragePath)
 	if err != nil {
 		log.Printf("Error loading previously sent redeem codes: %v", err)
 	}
 
-	err = processRedeemTask(s.DiscordBot, channelID, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed)
+	err = processRedeemTask(s.DiscordBot, channelID, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed, s.Config.Redeem.StoragePath)
 	if err != nil {
 		log.Printf("Error processing redeem task: %v", err)
 	}
 }
 
 // processRedeemTask handles the comparison, notification, and saving logic for redeem codes.
-func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool) error {
+func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool, storagePath string) error {
 	sentCodesMap := make(map[string]bool)
 	for _, code := range previouslySentCodes {
 		sentCodesMap[code] = true
@@ -76,7 +74,7 @@ func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo
 		log.Println("No new redeem codes available.")
 	}
 
-	if err := saveRedeemCodesToFile(redeemFilePath, allCurrentCodesForSave); err != nil {
+	if err := saveRedeemCodesToFile(storagePath, allCurrentCodesForSave); err != nil {
 		return fmt.Errorf("error saving current redeem codes to file: %w", err)
 	}
 

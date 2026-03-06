@@ -8,7 +8,8 @@ discord:
 redeem:
   service: true
   channel: "general"
-  hide_embed: true
+  storage_path: "redeem.json"
+  hide_embed: false
   api:
     url: "https://api.thebd2pulse.com/redeem"
     api_key: "YOUR_REDEEM_API_KEY_HERE"
@@ -18,8 +19,9 @@ redeem:
 news:
   service: true
   channel: "news"
+  storage_path: "news.json"
   send_content: false
-  hide_embed: true
+  hide_embed: false
   api:
     url: "https://www.browndust2.com/api/newsData_tw.json"
   schedule:

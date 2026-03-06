@@ -9,11 +9,7 @@ import (
 )
 
 func TestProcessRedeemTask(t *testing.T) {
-	// 暫時修改檔名以避免影響開發環境的 redeem.json
-	originalFileName := redeemFilePath
 	const testRedeemFile = "redeem_test.json"
-	// 這裡有點棘手，因為 redeemFilePath 是 package 層級的常數且在 redeem.go 定義
-	// 為了測試，我們暫時確保測試結束後刪除產生的檔案
 	defer os.Remove(testRedeemFile)
 
 	mockBot := &MockMessenger{}
@@ -25,24 +21,7 @@ func TestProcessRedeemTask(t *testing.T) {
 	
 	previouslySent := []string{"OLD_CODE"}
 
-	// 執行測試邏輯
-	// 注意：由於 redeemFilePath 在 redeem.go 是 const，
-	// 我們在測試中會真的寫入一個名為 "redeem.json" 的檔案（除非重構為變數）。
-	// 為了安全起見，我們先備份現有的 redeem.json (如果有的話)。
-	backupName := "redeem.json.bak"
-	hasBackup := false
-	if _, err := os.Stat(originalFileName); err == nil {
-		os.Rename(originalFileName, backupName)
-		hasBackup = true
-	}
-	defer func() {
-		os.Remove(originalFileName) // 刪除測試產生的
-		if hasBackup {
-			os.Rename(backupName, originalFileName)
-		}
-	}()
-
-	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
@@ -65,7 +44,7 @@ func TestProcessRedeemTask(t *testing.T) {
 	}
 
 	// 驗證檔案是否正確儲存 (應包含所有目前的代碼)
-	savedCodes, err := loadRedeemCodesFromFile(originalFileName)
+	savedCodes, err := loadRedeemCodesFromFile(testRedeemFile)
 	if err != nil {
 		t.Fatalf("Failed to load saved codes: %v", err)
 	}
@@ -75,28 +54,16 @@ func TestProcessRedeemTask(t *testing.T) {
 }
 
 func TestProcessRedeemTask_HideEmbed(t *testing.T) {
+	const testRedeemFile = "redeem_hide_test.json"
+	defer os.Remove(testRedeemFile)
+
 	mockBot := &MockMessenger{}
 	fetchedCodes := []model.RedeemCodeInfo{
 		{Code: "NEW_CODE_1", Reward: "Reward 1"},
 	}
 	previouslySent := []string{}
 
-	// 不需要真的測試檔案儲存，但為了符合函式行為，我們還是得備份
-	originalFileName := redeemFilePath
-	backupName := "redeem.json.bak"
-	hasBackup := false
-	if _, err := os.Stat(originalFileName); err == nil {
-		os.Rename(originalFileName, backupName)
-		hasBackup = true
-	}
-	defer func() {
-		os.Remove(originalFileName)
-		if hasBackup {
-			os.Rename(backupName, originalFileName)
-		}
-	}()
-
-	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, true)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, true, testRedeemFile)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
@@ -107,19 +74,8 @@ func TestProcessRedeemTask_HideEmbed(t *testing.T) {
 }
 
 func TestProcessRedeemTask_NoNewCodes(t *testing.T) {
-	originalFileName := redeemFilePath
-	backupName := "redeem.json.bak"
-	hasBackup := false
-	if _, err := os.Stat(originalFileName); err == nil {
-		os.Rename(originalFileName, backupName)
-		hasBackup = true
-	}
-	defer func() {
-		os.Remove(originalFileName)
-		if hasBackup {
-			os.Rename(backupName, originalFileName)
-		}
-	}()
+	const testRedeemFile = "redeem_none_test.json"
+	defer os.Remove(testRedeemFile)
 
 	mockBot := &MockMessenger{}
 	fetchedCodes := []model.RedeemCodeInfo{
@@ -127,7 +83,7 @@ func TestProcessRedeemTask_NoNewCodes(t *testing.T) {
 	}
 	previouslySent := []string{"OLD_CODE"}
 
-	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile)
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}

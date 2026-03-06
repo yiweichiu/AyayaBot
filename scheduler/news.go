@@ -34,7 +34,7 @@ func (s *Scheduler) RunNewsTask() {
 		return
 	}
 
-	oldNews, err := loadNewsFromFile()
+	oldNews, err := loadNewsFromFile(s.Config.News.StoragePath)
 	if err != nil {
 		log.Printf("Error loading old news from file: %v", err)
 		// Continue with empty oldNews if file load fails to allow saving new news
@@ -46,18 +46,15 @@ func (s *Scheduler) RunNewsTask() {
 		log.Printf("Error comparing and notifying news: %v", err)
 	}
 
-	err = saveNewsToFile(newNews)
+	err = saveNewsToFile(s.Config.News.StoragePath, newNews)
 	if err != nil {
 		log.Printf("Error saving new news to file: %v", err)
 	}
 }
 
-// newsFileName is the name of the file to store news items.
-const newsFileName = "news.json"
-
 // loadNewsFromFile loads news items from news.json.
-func loadNewsFromFile() ([]model.NewsItem, error) {
-	data, err := os.ReadFile(newsFileName)
+func loadNewsFromFile(filePath string) ([]model.NewsItem, error) {
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []model.NewsItem{}, nil // File doesn't exist, return empty slice
@@ -74,13 +71,13 @@ func loadNewsFromFile() ([]model.NewsItem, error) {
 }
 
 // saveNewsToFile saves news items to news.json.
-func saveNewsToFile(newsItems []model.NewsItem) error {
+func saveNewsToFile(filePath string, newsItems []model.NewsItem) error {
 	data, err := json.MarshalIndent(newsItems, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal news data for file: %w", err)
 	}
 
-	err = os.WriteFile(newsFileName, data, 0644)
+	err = os.WriteFile(filePath, data, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write news data to file: %w", err)
 	}
