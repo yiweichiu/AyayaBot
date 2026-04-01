@@ -19,12 +19,19 @@
   - `scheduler`: 負責排程管理與具體業務任務的執行 (`RunNewsTask`, `RunRedeemTask`)。
 
 ## 工程標準與慣例 (Mandates)
-1. **執行環境規範 (Windows)**:
-   - 程式必須支援以 `windowsgui` 模式編譯 (背景執行，無視窗)。
-   - 必須實作 **單一執行個體檢查 (Single-Instance Check)**：使用 Windows Named Mutex (`Local\AyayaBot-SingleInstance-Mutex`) 防止重複執行。
-   - 若偵測到重複執行，必須呼叫 Windows 原生 `MessageBoxW` 彈窗警告使用者。
-   - 工作列圖示必須使用 `.ico` 格式以確保 Windows 相容性。
-2. **命名規範**:
+1.  **跨平台執行環境規範 (Windows & macOS)**:
+    - **通用**: 程式必須具備 **單一執行個體檢查 (Single-Instance Check)** 並提供系統工作列 (System Tray) 操作介面。
+    - **Windows**:
+        - 必須支援以 `windowsgui` 模式編譯 (背景執行，無視窗)。
+        - 單一實例檢查必須使用 Windows Named Mutex (`Local\AyayaBot-SingleInstance-Mutex`)。
+        - 警告彈窗必須使用 Windows 原生 `MessageBoxW`。
+        - 工作列圖示必須嵌入 `.ico` 格式以確保相容性。
+    - **macOS (Darwin)**:
+        - 單一實例檢查必須使用檔案鎖 (`syscall.Flock`) 作用於 `/tmp/AyayaBot-SingleInstance.lock`。
+        - 警告彈窗必須透過 `osascript` (AppleScript) 實作。
+        - 圖示嵌入邏輯應保留更換為 `.png` 的擴充性。
+    - **實作要求**: 平台專屬邏輯必須嚴格使用 Go Build Tags (如 `//go:build windows` 或 `//go:build darwin`) 並拆分至 `main_{GOOS}.go` 檔案中。
+2.  **命名規範**:
    - Package 名稱必須為單一單字的小寫格式 (如 `bd2news`, `bd2redeem`, `logger`)，禁止使用底線。
    - 檔案命名應簡潔且與功能直接相關 (如 `client.go`, `news.go`, `logger.go`)。
    - 務必遵循 Golang 的慣用法 (Idiomatic Go)。

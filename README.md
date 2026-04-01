@@ -58,19 +58,43 @@ go mod tidy
     *   `redeem.hide_embed` / `news.hide_embed`: (選填) 設為 `true` 可隱藏 Discord 連結預覽 (嵌入內容)，預設為 `false`。
     *   `news.send_content`: (選填) 設為 `true` 可在通知中傳送新聞內容，預設為 `false`。
 
-### 4. 編譯與執行 (Windows)
+### 4. 編譯與執行
 
-為了讓程式在背景執行且不顯示黑視窗，並啟用系統工作列與防重複執行功能，請使用以下命令編譯：
+本專案支援在 Windows 與 macOS 上運行，並提供系統工作列 (System Tray) 圖示與單一執行個體檢查 (Single-Instance Check)。
 
+#### Windows (背景執行)
+為了讓程式在背景執行且不顯示黑視窗，請使用以下命令編譯：
 ```powershell
-# 編譯為背景執行應用程式
-go build -o ayayabot.exe -ldflags="-H=windowsgui" main.go
+# 編譯為背景執行應用程式 (包含圖示與防重複啟動)
+go build -o ayayabot.exe -ldflags="-H=windowsgui" .
 
 # 執行
 ./ayayabot.exe
 ```
 
-執行後，你可以在 Windows 系統工作列（右下角）找到 AyayaBot 圖示，右鍵點擊可選擇「關閉 (Quit)」。
+#### macOS
+在 macOS 上編譯與執行：
+```bash
+# 編譯
+go build -o ayayabot .
+
+# 執行
+./ayayabot
+```
+*註：macOS 版會自動在系統選單列 (Menu Bar) 顯示圖示，並使用 `osascript` 彈出警告視窗。*
+
+執行後，你可以在系統工作列找到 AyayaBot 圖示，右鍵點擊可選擇「關閉 (Quit)」。
+
+## 跨平台支援細節
+
+*   **Windows**: 
+    *   使用 Win32 API (`CreateMutexW`) 確保單一實例執行。
+    *   重複啟動時使用 `MessageBoxW` 顯示警告。
+    *   支援 `-H=windowsgui` 模式以隱藏控制台。
+*   **macOS (Darwin)**:
+    *   使用檔案鎖 (`syscall.Flock`) 確保單一實例執行。
+    *   重複啟動時使用 AppleScript (`osascript`) 顯示警告。
+    *   圖示建議使用透明背景的 `.png` (目前預設使用 `.ico`)。
 
 ## 專案結構 (Go Idiomatic)
 
@@ -88,7 +112,9 @@ AyayaBot/
 ├── log/                  # 自動生成的日誌儲存目錄
 ├── config.yaml.example   # 設定檔範本 (受 Git 追蹤)
 ├── GEMINI.md             # Gemini CLI 開發規範指引
-├── main.go               # 程式入口點，負責初始化與註冊任務
+├── main.go               # 程式入口點，負責主邏輯
+├── main_windows.go       # Windows 平台專屬實作 (Mutex, MessageBox)
+├── main_darwin.go        # macOS 平台專屬實作 (Flock, osascript)
 └── README.md             # 本說明文件
 ```
 

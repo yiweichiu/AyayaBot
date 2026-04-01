@@ -1,12 +1,10 @@
 package main
 
 import (
-	_ "embed"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"unsafe"
 
 	"github.com/getlantern/systray"
 	"github.com/yiweichiu/AyayaBot/config"
@@ -15,39 +13,21 @@ import (
 	"github.com/yiweichiu/AyayaBot/scheduler"
 )
 
-//go:embed assets/icon.ico
-var iconData []byte
-
 var (
-	kernel32        = syscall.NewLazyDLL("kernel32.dll")
-	procCreateMutex = kernel32.NewProc("CreateMutexW")
-	user32          = syscall.NewLazyDLL("user32.dll")
-	procMessageBox  = user32.NewProc("MessageBoxW")
-
 	globalBot       *discord.Bot
 	globalScheduler *scheduler.Scheduler
 )
 
-const (
-	errorAlreadyExists syscall.Errno = 183
-)
-
-const (
-	mbOk          uint32 = 0x00000000
-	mbIconWarning uint32 = 0x00000030
-)
-
 func main() {
-	// Check for single instance using Windows Named Mutex
-	mutexName, _ := syscall.UTF16PtrFromString("Local\\AyayaBot-SingleInstance-Mutex")
-	ret, _, err := procCreateMutex.Call(0, 0, uintptr(unsafe.Pointer(mutexName)))
-	if err != nil && err.(syscall.Errno) == errorAlreadyExists {
+	// Check for single instance
+	cleanup, ok := checkSingleInstance()
+	if !ok {
 		showAlert("AyayaBot", "程式已經在運行中！\n請檢查系統工作列。")
 		return
 	}
-	defer func(h uintptr) {
-		// handle cleanup if needed
-	}(ret)
+	if cleanup != nil {
+		defer cleanup()
+	}
 
 	// Initialize logger
 	if err := logger.Init(); err != nil {
@@ -56,12 +36,6 @@ func main() {
 	defer logger.Close()
 
 	systray.Run(onReady, onExit)
-}
-
-func showAlert(title, message string) {
-	t, _ := syscall.UTF16PtrFromString(title)
-	m, _ := syscall.UTF16PtrFromString(message)
-	_, _, _ = procMessageBox.Call(0, uintptr(unsafe.Pointer(m)), uintptr(unsafe.Pointer(t)), uintptr(mbOk|mbIconWarning))
 }
 
 func onReady() {
@@ -92,7 +66,7 @@ func onReady() {
 	globalScheduler = s
 
 	setupSignals(mQuit)
-	log.Println("AyayaBot is running in background.")
+	log.Println("AyayaBot is running.")
 }
 
 func setupSystray() {
