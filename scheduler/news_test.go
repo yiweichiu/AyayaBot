@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -135,6 +136,49 @@ func TestCompareAndNotify_Order(t *testing.T) {
 	for i, msg := range mockBot.Messages {
 		if !strings.HasPrefix(msg, "📢 **[新公告]") {
 			t.Errorf("Message %d expected to start with '📢 **[新公告]', got: %s", i, msg)
+		}
+	}
+}
+
+func TestNewsFileStorage(t *testing.T) {
+	tempFile := "test_news.json"
+	defer os.Remove(tempFile)
+
+	now := time.Now().Truncate(time.Second) // Truncate to avoid precision issues in JSON
+	newsItems := []model.NewsItem{
+		{ID: 1, Subject: "Subject 1", PublishedAt: now, Content: "Content 1"},
+		{ID: 2, Subject: "Subject 2", PublishedAt: now.Add(time.Hour), Content: "Content 2"},
+	}
+
+	// Save news items
+	err := saveNewsToFile(tempFile, newsItems)
+	if err != nil {
+		t.Fatalf("saveNewsToFile failed: %v", err)
+	}
+
+	// Load news items
+	loadedNews, err := loadNewsFromFile(tempFile)
+	if err != nil {
+		t.Fatalf("loadNewsFromFile failed: %v", err)
+	}
+
+	if len(loadedNews) != 2 {
+		t.Fatalf("Expected 2 news items, got %d", len(loadedNews))
+	}
+
+	for i, item := range loadedNews {
+		if item.ID != newsItems[i].ID {
+			t.Errorf("Item %d: Expected ID %d, got %d", i, newsItems[i].ID, item.ID)
+		}
+		if item.Subject != newsItems[i].Subject {
+			t.Errorf("Item %d: Expected Subject %q, got %q", i, newsItems[i].Subject, item.Subject)
+		}
+		if !item.PublishedAt.Equal(newsItems[i].PublishedAt) {
+			t.Errorf("Item %d: Expected PublishedAt %v, got %v", i, newsItems[i].PublishedAt, item.PublishedAt)
+		}
+		// Content should be empty after loading from minimal save
+		if item.Content != "" {
+			t.Errorf("Item %d: Expected empty Content, got %q", i, item.Content)
 		}
 	}
 }

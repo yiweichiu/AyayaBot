@@ -74,9 +74,24 @@ func loadNewsFromFile(filePath string) ([]model.NewsItem, error) {
 	return newsItems, nil
 }
 
-// saveNewsToFile saves news items to news.json.
+// saveNewsToFile saves news items to news.json, only storing ID, Subject, and PublishedAt.
 func saveNewsToFile(filePath string, newsItems []model.NewsItem) error {
-	data, err := json.MarshalIndent(newsItems, "", "  ")
+	type minimalNewsItem struct {
+		ID          int       `json:"id"`
+		Subject     string    `json:"subject"`
+		PublishedAt time.Time `json:"publishedAt"`
+	}
+
+	toSave := make([]minimalNewsItem, len(newsItems))
+	for i, item := range newsItems {
+		toSave[i] = minimalNewsItem{
+			ID:          item.ID,
+			Subject:     item.Subject,
+			PublishedAt: item.PublishedAt,
+		}
+	}
+
+	data, err := json.MarshalIndent(toSave, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal news data for file: %w", err)
 	}
