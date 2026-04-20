@@ -56,7 +56,12 @@ go mod tidy
     *   `redeem.storage_path` / `news.storage_path`: (選填) 指定已發送紀錄的儲存路徑，預設分別為 `redeem.json` 與 `news.json`。
     *   `redeem.service` / `news.service`: (選填) 設為 `false` 可停用該功能，預設為 `true`。
     *   `redeem.hide_embed` / `news.hide_embed`: (選填) 設為 `true` 可隱藏 Discord 連結預覽 (嵌入內容)，預設為 `false`。
-    *   `news.send_content`: (選填) 設為 `true` 可在通知中傳送新聞內容，預設為 `false`。
+    *   `redeem.mention_role_id` / `news.mention_role_id`: (選填) 設定發送通知時要標註 (Tag) 的對象，支援以下格式：
+        *   **`everyone`**: 標註 `@everyone`。
+        *   **`here`**: 標註 `@here`。
+        *   **身分組 ID**: 填入 Discord 身分組數字 ID 以標註特定身分組 (例如 `"1234567890"`)。
+        *   **留空 `""`**: (預設) 不進行任何標註。
+    *   `news.send_content`: (選填) 設為 `true` 可以在通知中傳送新聞內容，預設為 `false`。
 
 ### 4. 編譯與執行
 

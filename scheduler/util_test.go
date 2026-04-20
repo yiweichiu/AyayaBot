@@ -64,3 +64,24 @@ func TestTruncateString(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMentionTag(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"", ""},
+		{"everyone", "@everyone"},
+		{"here", "@here"},
+		{"123456789", "<@&123456789>"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := GetMentionTag(tt.input)
+			if got != tt.expected {
+				t.Errorf("GetMentionTag(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}

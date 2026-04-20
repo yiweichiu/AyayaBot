@@ -21,7 +21,7 @@ func TestProcessRedeemTask(t *testing.T) {
 	
 	previouslySent := []string{"OLD_CODE"}
 
-	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile, "")
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
@@ -63,13 +63,33 @@ func TestProcessRedeemTask_HideEmbed(t *testing.T) {
 	}
 	previouslySent := []string{}
 
-	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, true, testRedeemFile)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, true, testRedeemFile, "")
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}
 
 	if !strings.Contains(mockBot.Messages[0], "(<https://thebd2pulse.com/>)") {
 		t.Errorf("Message should contain hidden URL: %s", mockBot.Messages[0])
+	}
+}
+
+func TestProcessRedeemTask_Mention(t *testing.T) {
+	const testRedeemFile = "redeem_mention_test.json"
+	defer os.Remove(testRedeemFile)
+
+	mockBot := &MockMessenger{}
+	fetchedCodes := []model.RedeemCodeInfo{
+		{Code: "NEW_CODE_1", Reward: "Reward 1"},
+	}
+	previouslySent := []string{}
+
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile, "987654321")
+	if err != nil {
+		t.Fatalf("processRedeemTask failed: %v", err)
+	}
+
+	if !strings.HasPrefix(mockBot.Messages[0], "<@&987654321>\n") {
+		t.Errorf("Expected message to start with role mention and newline, got: %s", mockBot.Messages[0])
 	}
 }
 
@@ -83,7 +103,7 @@ func TestProcessRedeemTask_NoNewCodes(t *testing.T) {
 	}
 	previouslySent := []string{"OLD_CODE"}
 
-	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile)
+	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile, "")
 	if err != nil {
 		t.Fatalf("processRedeemTask failed: %v", err)
 	}

@@ -42,14 +42,14 @@ func (s *Scheduler) RunRedeemTask() {
 		log.Printf("Error loading previously sent redeem codes: %v", err)
 	}
 
-	err = processRedeemTask(s.DiscordBot, channelID, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed, s.Config.Redeem.StoragePath)
+	err = processRedeemTask(s.DiscordBot, channelID, fetchedCodesInfo, previouslySentCodes, s.Config.Redeem.HideEmbed, s.Config.Redeem.StoragePath, s.Config.Redeem.MentionRoleID)
 	if err != nil {
 		log.Printf("Error processing redeem task: %v", err)
 	}
 }
 
 // processRedeemTask handles the comparison, notification, and saving logic for redeem codes.
-func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool, storagePath string) error {
+func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo []model.RedeemCodeInfo, previouslySentCodes []string, hideEmbed bool, storagePath string, mentionRoleID string) error {
 	sentCodesMap := make(map[string]bool)
 	for _, code := range previouslySentCodes {
 		sentCodesMap[code] = true
@@ -71,6 +71,9 @@ func processRedeemTask(bot discord.Messenger, channelID string, fetchedCodesInfo
 			redeemURL = "<" + redeemURL + ">"
 		}
 		message := fmt.Sprintf("📢 **[新兌換碼](%s)**\n%s", redeemURL, strings.Join(newMessages, "\n"))
+		if tag := GetMentionTag(mentionRoleID); tag != "" {
+			message = fmt.Sprintf("%s\n%s", tag, message)
+		}
 		if err := bot.SendMessage(channelID, message); err != nil {
 			return fmt.Errorf("failed to send new redeem codes to Discord channel %s: %w", channelID, err)
 		}

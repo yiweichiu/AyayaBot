@@ -40,3 +40,16 @@ func TruncateString(s string, maxRunes int) string {
 
 	return strings.TrimSpace(truncated) + "..."
 }
+
+// GetMentionTag returns the proper Discord mention string based on the provided input.
+// If it's "everyone" or "here", it returns "@everyone" or "@here".
+// If it's a numeric ID, it returns "<@&ID>".
+func GetMentionTag(mentionRoleID string) string {
+	if mentionRoleID == "" {
+		return ""
+	}
+	if mentionRoleID == "everyone" || mentionRoleID == "here" {
+		return "@" + mentionRoleID
+	}
+	return "<@&" + mentionRoleID + ">"
+}

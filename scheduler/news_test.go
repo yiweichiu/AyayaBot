@@ -36,7 +36,7 @@ func TestCompareAndNotify(t *testing.T) {
 		{ID: 1, Subject: "Old News 1", PublishedAt: now.Add(-2 * time.Hour)},
 	}
 
-	err := compareAndNotify(mockBot, channelID, oldNews, newNews, false, false)
+	err := compareAndNotify(mockBot, channelID, oldNews, newNews, false, false, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestCompareAndNotify_HideEmbed(t *testing.T) {
 		{ID: 1, Subject: "News 1", PublishedAt: now},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true)
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -75,6 +75,25 @@ func TestCompareAndNotify_HideEmbed(t *testing.T) {
 	expectedMessage := fmt.Sprintf("📢 **[新公告](<https://www.browndust2.com/zh-tw/news/view?id=1>) %s**\n**News 1**\n", expectedDate)
 	if mockBot.Messages[0] != expectedMessage {
 		t.Errorf("Expected message with < >:\n%q\nGot:\n%q", expectedMessage, mockBot.Messages[0])
+	}
+}
+
+func TestCompareAndNotify_Mention(t *testing.T) {
+	mockBot := &MockMessenger{}
+	now := time.Now()
+
+	oldNews := []model.NewsItem{}
+	newNews := []model.NewsItem{
+		{ID: 1, Subject: "News 1", PublishedAt: now},
+	}
+
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, false, "123456789")
+	if err != nil {
+		t.Fatalf("compareAndNotify failed: %v", err)
+	}
+
+	if !strings.HasPrefix(mockBot.Messages[0], "<@&123456789>\n") {
+		t.Errorf("Expected message to start with role mention and newline, got: %s", mockBot.Messages[0])
 	}
 }
 
@@ -87,7 +106,7 @@ func TestCompareAndNotify_WithContent(t *testing.T) {
 		{ID: 1, Subject: "News 1", PublishedAt: now, Content: "This is the content"},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, true, true)
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, true, true, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -111,7 +130,7 @@ func TestCompareAndNotify_Order(t *testing.T) {
 		{ID: 1, Subject: "News 1 (Older)", PublishedAt: now.Add(-1 * time.Hour)},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true)
+	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}

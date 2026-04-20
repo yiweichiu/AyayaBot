@@ -45,7 +45,7 @@ func (s *Scheduler) RunNewsTask() {
 		oldNews = []model.NewsItem{}
 	}
 
-	err = compareAndNotify(s.DiscordBot, channelID, oldNews, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed)
+	err = compareAndNotify(s.DiscordBot, channelID, oldNews, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed, s.Config.News.MentionRoleID)
 	if err != nil {
 		log.Printf("Error comparing and notifying news: %v", err)
 	}
@@ -104,7 +104,7 @@ func saveNewsToFile(filePath string, newsItems []model.NewsItem) error {
 }
 
 // compareAndNotify compares old and new news items and sends notifications for new ones.
-func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews []model.NewsItem, sendContent bool, hideEmbed bool) error {
+func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews []model.NewsItem, sendContent bool, hideEmbed bool, mentionRoleID string) error {
 	oldNewsMap := make(map[int]struct{})
 	for _, item := range oldNews {
 		oldNewsMap[item.ID] = struct{}{}
@@ -129,6 +129,10 @@ func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews 
 
 			message := fmt.Sprintf("📢 **[新公告](%s) %s**\n**%s**\n",
 				newsURL, newAnnc.PublishedAt.Local().Format("2006-01-02"), newAnnc.Subject)
+
+			if tag := GetMentionTag(mentionRoleID); tag != "" {
+				message = fmt.Sprintf("%s\n%s", tag, message)
+			}
 
 			if sendContent && newAnnc.Content != "" {
 				content, err := htmltomarkdown.ConvertString(newAnnc.Content)

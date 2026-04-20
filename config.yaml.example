@@ -8,6 +8,7 @@ discord:
 redeem:
   service: true
   channel: "general"
+  mention_role_id: "" # Optional: Discord Role ID to mention
   storage_path: "redeem.json"
   hide_embed: false
   api:
@@ -19,6 +20,7 @@ redeem:
 news:
   service: true
   channel: "news"
+  mention_role_id: "" # Optional: Discord Role ID to mention
   storage_path: "news.json"
   send_content: false
   hide_embed: false
