@@ -16,6 +16,9 @@ import (
 
 // RunNewsTask executes the full flow of fetching, comparing, and notifying news.
 func (s *Scheduler) RunNewsTask() {
+	if !s.Config.News.Service {
+		return
+	}
 	log.Println("Executing news fetch job...")
 
 	channelID := s.GetChannelID(s.Config.News.Channel)

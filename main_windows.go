@@ -4,6 +4,9 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
+	"os/exec"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -51,4 +54,18 @@ func showAlert(title, message string) {
 	t, _ := syscall.UTF16PtrFromString(title)
 	m, _ := syscall.UTF16PtrFromString(message)
 	_, _, _ = procMessageBox.Call(0, uintptr(unsafe.Pointer(m)), uintptr(unsafe.Pointer(t)), uintptr(mbOk|mbIconWarning))
+}
+
+func showInputDialog(title, message, defaultAnswer string) (string, bool) {
+	// Use PowerShell to show an input box via Microsoft.VisualBasic.Interaction
+	psCommand := fmt.Sprintf(`[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null; $res = [Microsoft.VisualBasic.Interaction]::InputBox('%s', '%s', '%s'); if($res) { Write-Host $res }`, message, title, defaultAnswer)
+	out, err := exec.Command("powershell", "-NoProfile", "-Command", psCommand).Output()
+	if err != nil {
+		return "", false
+	}
+	result := strings.TrimSpace(string(out))
+	if result == "" {
+		return "", false
+	}
+	return result, true
 }

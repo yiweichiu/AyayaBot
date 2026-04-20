@@ -40,3 +40,12 @@ func showAlert(title, message string) {
 	script := fmt.Sprintf("display alert %q message %q", title, message)
 	_ = exec.Command("osascript", "-e", script).Run()
 }
+
+func showInputDialog(title, message, defaultAnswer string) (string, bool) {
+	script := fmt.Sprintf("text returned of (display dialog %q default answer %q with title %q buttons {\"取消\", \"確定\"} default button \"確定\")", message, defaultAnswer, title)
+	out, err := exec.Command("osascript", "-e", script).Output()
+	if err != nil {
+		return "", false
+	}
+	return string(out[:len(out)-1]), true // Remove trailing newline
+}

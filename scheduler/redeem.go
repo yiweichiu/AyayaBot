@@ -16,6 +16,9 @@ import (
 
 // RunRedeemTask executes the full flow of fetching and notifying redeem codes.
 func (s *Scheduler) RunRedeemTask() {
+	if !s.Config.Redeem.Service {
+		return
+	}
 	log.Println("Fetching redeem codes...")
 
 	channelID := s.GetChannelID(s.Config.Redeem.Channel)
