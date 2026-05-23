@@ -13,50 +13,38 @@ import (
 )
 
 func TestFetchNews(t *testing.T) {
-	// ... (rest of the setup)
-
 	now := time.Now()
 	mockResponse := model.NewsAPIResponse{}
 	
 	// Item 1: Oldest
 	item1 := struct {
-		ID         int `json:"id"`
-		Attributes struct {
-			Subject     string    `json:"subject"`
-			CreatedAt   time.Time `json:"createdAt"`
-			UpdatedAt   time.Time `json:"updatedAt"`
-			PublishedAt time.Time `json:"publishedAt"`
-			Content     *string   `json:"content"`
-			Tag         string    `json:"tag"`
-			Locale      string    `json:"locale"`
-			NewContent  string    `json:"NewContent"`
-		} `json:"attributes"`
+		ID             string    `json:"id"`
+		Subject        string    `json:"subject"`
+		Category       string    `json:"category"`
+		PublishedAt    time.Time `json:"publishedAt"`
+		ContentPreview string    `json:"contentPreview"`
 	}{
-		ID: 1,
+		ID:             "id1",
+		Subject:        "Test News 1",
+		PublishedAt:    now.Add(-1 * time.Hour),
+		ContentPreview: "Preview 1",
 	}
-	item1.Attributes.Subject = "Test News 1"
-	item1.Attributes.PublishedAt = now.Add(-1 * time.Hour)
-	mockResponse.Data = append(mockResponse.Data, item1)
+	mockResponse.Items = append(mockResponse.Items, item1)
 
 	// Item 2: Newer
 	item2 := struct {
-		ID         int `json:"id"`
-		Attributes struct {
-			Subject     string    `json:"subject"`
-			CreatedAt   time.Time `json:"createdAt"`
-			UpdatedAt   time.Time `json:"updatedAt"`
-			PublishedAt time.Time `json:"publishedAt"`
-			Content     *string   `json:"content"`
-			Tag         string    `json:"tag"`
-			Locale      string    `json:"locale"`
-			NewContent  string    `json:"NewContent"`
-		} `json:"attributes"`
+		ID             string    `json:"id"`
+		Subject        string    `json:"subject"`
+		Category       string    `json:"category"`
+		PublishedAt    time.Time `json:"publishedAt"`
+		ContentPreview string    `json:"contentPreview"`
 	}{
-		ID: 2,
+		ID:             "id2",
+		Subject:        "Test News 2 (Newer)",
+		PublishedAt:    now,
+		ContentPreview: "Preview 2",
 	}
-	item2.Attributes.Subject = "Test News 2 (Newer)"
-	item2.Attributes.PublishedAt = now
-	mockResponse.Data = append(mockResponse.Data, item2)
+	mockResponse.Items = append(mockResponse.Items, item2)
 
 	// 建立 Mock HTTP Server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -77,11 +65,11 @@ func TestFetchNews(t *testing.T) {
 	}
 
 	// 驗證排序 (Newer first)
-	if news[0].ID != 2 {
-		t.Errorf("Expected first item ID to be 2 (newer), got %d", news[0].ID)
+	if news[0].ID != "id2" {
+		t.Errorf("Expected first item ID to be 'id2' (newer), got %s", news[0].ID)
 	}
-	if news[1].ID != 1 {
-		t.Errorf("Expected second item ID to be 1, got %d", news[1].ID)
+	if news[1].ID != "id1" {
+		t.Errorf("Expected second item ID to be 'id1', got %s", news[1].ID)
 	}
 }
 

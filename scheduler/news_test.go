@@ -25,18 +25,15 @@ func TestCompareAndNotify(t *testing.T) {
 	now := time.Now()
 	channelID := "test-channel"
 
-	oldNews := []model.NewsItem{
-		{ID: 1, Subject: "Old News 1", PublishedAt: now.Add(-2 * time.Hour)},
-		{ID: 2, Subject: "Old News 2", PublishedAt: now.Add(-1 * time.Hour)},
-	}
+	oldNewsIDs := []string{"id1", "id2"}
 
 	newNews := []model.NewsItem{
-		{ID: 3, Subject: "New News 3 (Newer)", PublishedAt: now},
-		{ID: 2, Subject: "Old News 2", PublishedAt: now.Add(-1 * time.Hour)},
-		{ID: 1, Subject: "Old News 1", PublishedAt: now.Add(-2 * time.Hour)},
+		{ID: "id3", Subject: "New News 3 (Newer)", PublishedAt: now},
+		{ID: "id2", Subject: "Old News 2", PublishedAt: now.Add(-1 * time.Hour)},
+		{ID: "id1", Subject: "Old News 1", PublishedAt: now.Add(-2 * time.Hour)},
 	}
 
-	err := compareAndNotify(mockBot, channelID, oldNews, newNews, false, false, "")
+	err := compareAndNotify(mockBot, channelID, oldNewsIDs, newNews, false, false, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -51,7 +48,7 @@ func TestCompareAndNotify(t *testing.T) {
 	}
 
 	expectedDate := now.Local().Format("2006-01-02")
-	expectedMessage := fmt.Sprintf("📢 **[新公告](https://www.browndust2.com/zh-tw/news/view?id=3) %s**\n**New News 3 (Newer)**\n", expectedDate)
+	expectedMessage := fmt.Sprintf("📢 **[新公告](https://www.browndust2.com/zh-tw/news/view?id=id3) %s**\n**New News 3 (Newer)**\n", expectedDate)
 	if mockBot.Messages[0] != expectedMessage {
 		t.Errorf("Expected message:\n%q\nGot:\n%q", expectedMessage, mockBot.Messages[0])
 	}
@@ -61,18 +58,18 @@ func TestCompareAndNotify_HideEmbed(t *testing.T) {
 	mockBot := &MockMessenger{}
 	now := time.Now()
 
-	oldNews := []model.NewsItem{}
+	oldNewsIDs := []string{}
 	newNews := []model.NewsItem{
-		{ID: 1, Subject: "News 1", PublishedAt: now},
+		{ID: "id1", Subject: "News 1", PublishedAt: now},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true, "")
+	err := compareAndNotify(mockBot, "test-channel", oldNewsIDs, newNews, false, true, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
 
 	expectedDate := now.Local().Format("2006-01-02")
-	expectedMessage := fmt.Sprintf("📢 **[新公告](<https://www.browndust2.com/zh-tw/news/view?id=1>) %s**\n**News 1**\n", expectedDate)
+	expectedMessage := fmt.Sprintf("📢 **[新公告](<https://www.browndust2.com/zh-tw/news/view?id=id1>) %s**\n**News 1**\n", expectedDate)
 	if mockBot.Messages[0] != expectedMessage {
 		t.Errorf("Expected message with < >:\n%q\nGot:\n%q", expectedMessage, mockBot.Messages[0])
 	}
@@ -82,12 +79,12 @@ func TestCompareAndNotify_Mention(t *testing.T) {
 	mockBot := &MockMessenger{}
 	now := time.Now()
 
-	oldNews := []model.NewsItem{}
+	oldNewsIDs := []string{}
 	newNews := []model.NewsItem{
-		{ID: 1, Subject: "News 1", PublishedAt: now},
+		{ID: "id1", Subject: "News 1", PublishedAt: now},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, false, "123456789")
+	err := compareAndNotify(mockBot, "test-channel", oldNewsIDs, newNews, false, false, "123456789")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -101,12 +98,12 @@ func TestCompareAndNotify_WithContent(t *testing.T) {
 	mockBot := &MockMessenger{}
 	now := time.Now()
 
-	oldNews := []model.NewsItem{}
+	oldNewsIDs := []string{}
 	newNews := []model.NewsItem{
-		{ID: 1, Subject: "News 1", PublishedAt: now, Content: "This is the content"},
+		{ID: "id1", Subject: "News 1", PublishedAt: now, Content: "This is the content"},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, true, true, "")
+	err := compareAndNotify(mockBot, "test-channel", oldNewsIDs, newNews, true, true, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -124,13 +121,13 @@ func TestCompareAndNotify_Order(t *testing.T) {
 	mockBot := &MockMessenger{}
 	now := time.Now()
 
-	oldNews := []model.NewsItem{} // No old news
+	oldNewsIDs := []string{} // No old news
 	newNews := []model.NewsItem{
-		{ID: 2, Subject: "News 2 (Newer)", PublishedAt: now},
-		{ID: 1, Subject: "News 1 (Older)", PublishedAt: now.Add(-1 * time.Hour)},
+		{ID: "id2", Subject: "News 2 (Newer)", PublishedAt: now},
+		{ID: "id1", Subject: "News 1 (Older)", PublishedAt: now.Add(-1 * time.Hour)},
 	}
 
-	err := compareAndNotify(mockBot, "test-channel", oldNews, newNews, false, true, "")
+	err := compareAndNotify(mockBot, "test-channel", oldNewsIDs, newNews, false, true, "")
 	if err != nil {
 		t.Fatalf("compareAndNotify failed: %v", err)
 	}
@@ -138,12 +135,6 @@ func TestCompareAndNotify_Order(t *testing.T) {
 	if len(mockBot.Messages) != 2 {
 		t.Fatalf("Expected 2 messages, got %d", len(mockBot.Messages))
 	}
-
-	// Should be sent in reverse order (oldest to newest)
-	// News items in newNews are usually sorted newest first from API.
-	// So newNews[0] is ID: 2, newNews[1] is ID: 1.
-	// compareAndNotify should iterate from newest to oldest in reverse:
-	// newNews[1] (ID 1), then newNews[0] (ID 2).
 
 	if !strings.Contains(mockBot.Messages[0], "News 1 (Older)") {
 		t.Errorf("Expected first message to be 'News 1 (Older)', got: %s", mockBot.Messages[0])
@@ -165,8 +156,8 @@ func TestNewsFileStorage(t *testing.T) {
 
 	now := time.Now().Truncate(time.Second) // Truncate to avoid precision issues in JSON
 	newsItems := []model.NewsItem{
-		{ID: 1, Subject: "Subject 1", PublishedAt: now, Content: "Content 1"},
-		{ID: 2, Subject: "Subject 2", PublishedAt: now.Add(time.Hour), Content: "Content 2"},
+		{ID: "id1", Subject: "Subject 1", PublishedAt: now, Content: "Content 1"},
+		{ID: "id2", Subject: "Subject 2", PublishedAt: now.Add(time.Hour), Content: "Content 2"},
 	}
 
 	// Save news items
@@ -175,29 +166,48 @@ func TestNewsFileStorage(t *testing.T) {
 		t.Fatalf("saveNewsToFile failed: %v", err)
 	}
 
-	// Load news items
-	loadedNews, err := loadNewsFromFile(tempFile)
+	// Load news IDs
+	loadedIDs, err := loadNewsFromFile(tempFile)
 	if err != nil {
 		t.Fatalf("loadNewsFromFile failed: %v", err)
 	}
 
-	if len(loadedNews) != 2 {
-		t.Fatalf("Expected 2 news items, got %d", len(loadedNews))
+	if len(loadedIDs) != 2 {
+		t.Fatalf("Expected 2 news IDs, got %d", len(loadedIDs))
 	}
 
-	for i, item := range loadedNews {
-		if item.ID != newsItems[i].ID {
-			t.Errorf("Item %d: Expected ID %d, got %d", i, newsItems[i].ID, item.ID)
+	for i, id := range loadedIDs {
+		if id != newsItems[i].ID {
+			t.Errorf("Item %d: Expected ID %s, got %s", i, newsItems[i].ID, id)
 		}
-		if item.Subject != newsItems[i].Subject {
-			t.Errorf("Item %d: Expected Subject %q, got %q", i, newsItems[i].Subject, item.Subject)
-		}
-		if !item.PublishedAt.Equal(newsItems[i].PublishedAt) {
-			t.Errorf("Item %d: Expected PublishedAt %v, got %v", i, newsItems[i].PublishedAt, item.PublishedAt)
-		}
-		// Content should be empty after loading from minimal save
-		if item.Content != "" {
-			t.Errorf("Item %d: Expected empty Content, got %q", i, item.Content)
-		}
+	}
+}
+
+func TestNewsFileStorage_BackwardCompatibility(t *testing.T) {
+	tempFile := "test_news_compat.json"
+	defer os.Remove(tempFile)
+
+	// Old format data
+	oldData := `[
+		{"id": "id1", "subject": "Sub 1", "publishedAt": "2024-01-01T00:00:00Z"},
+		{"id": "id2", "subject": "Sub 2", "publishedAt": "2024-01-01T01:00:00Z"}
+	]`
+	err := os.WriteFile(tempFile, []byte(oldData), 0644)
+	if err != nil {
+		t.Fatalf("failed to write old format file: %v", err)
+	}
+
+	// Load news IDs
+	loadedIDs, err := loadNewsFromFile(tempFile)
+	if err != nil {
+		t.Fatalf("loadNewsFromFile failed: %v", err)
+	}
+
+	if len(loadedIDs) != 2 {
+		t.Fatalf("Expected 2 news IDs, got %d", len(loadedIDs))
+	}
+
+	if loadedIDs[0] != "id1" || loadedIDs[1] != "id2" {
+		t.Errorf("Incorrect IDs loaded: %v", loadedIDs)
 	}
 }

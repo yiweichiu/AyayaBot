@@ -2,34 +2,36 @@ package model
 
 import "time"
 
-// NewsAPIResponse represents the overall structure of the news API response.
+// DefaultNewsLimit defines the default number of news items to fetch and store.
+const DefaultNewsLimit = 20
+
+// NewsAPIResponse represents the overall structure of the new news API response.
 type NewsAPIResponse struct {
-	Data []struct {
-		ID         int `json:"id"`
-		Attributes struct {
-			Subject     string    `json:"subject"`
-			CreatedAt   time.Time `json:"createdAt"`
-			UpdatedAt   time.Time `json:"updatedAt"`
-			PublishedAt time.Time `json:"publishedAt"`
-			Content     *string   `json:"content"` // Can be null
-			Tag         string    `json:"tag"`
-			Locale      string    `json:"locale"`
-			NewContent  string    `json:"NewContent"`
-		} `json:"attributes"`
-	} `json:"data"`
-	Meta struct {
-		Pagination struct {
-			Page      int `json:"page"`
-			PageSize  int `json:"pageSize"`
-			PageCount int `json:"pageCount"`
-			Total     int `json:"total"`
-		} `json:"pagination"`
-	} `json:"meta"`
+	Items []struct {
+		ID             string    `json:"id"`
+		Subject        string    `json:"subject"`
+		Category       string    `json:"category"`
+		PublishedAt    time.Time `json:"publishedAt"`
+		ContentPreview string    `json:"contentPreview"`
+	} `json:"items"`
+	TotalCount int `json:"totalCount"`
+	Page       int `json:"page"`
+	TotalPages int `json:"totalPages"`
+}
+
+// NewsDetailResponse represents the structure of the news detail API response.
+type NewsDetailResponse struct {
+	ID          string    `json:"id"`
+	Subject     string    `json:"subject"`
+	Category    string    `json:"category"`
+	PublishedAt time.Time `json:"publishedAt"`
+	Content     string    `json:"content"`
+	ContentHtml string    `json:"contentHtml"`
 }
 
 // NewsItem represents a simplified structure of a single news item for storage and comparison.
 type NewsItem struct {
-	ID          int       `json:"id"`
+	ID          string    `json:"id"`
 	Subject     string    `json:"subject"`
 	PublishedAt time.Time `json:"publishedAt"`
 	Content     string    `json:"content"`

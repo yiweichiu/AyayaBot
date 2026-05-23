@@ -14,9 +14,9 @@
   - `discord`: Discord 機器人連線與訊息發送邏輯。
   - `logger`: 檔案日誌系統，負責初始化與每日定時切換。
   - `model`: 專案通用的資料結構 (News, Redeem)。
-  - `repository/bd2news`: 負責與 BD2 新聞 API 交互。
+  - `repository/bd2news`: 負責與 BD2 新聞 API 交互，包含列表抓取與詳情 (HTML 內容) 獲取。
   - `repository/bd2redeem`: 負責與 BD2 兌換碼 API 交互。
-  - `scheduler`: 負責排程管理與具體業務任務的執行 (`RunNewsTask`, `RunRedeemTask`)。
+  - `scheduler`: 負責排程管理與具體業務任務的執行 (`RunNewsTask`, `RunRedeemTask`)，包含 HTML 轉 Markdown 與訊息截斷邏輯。
 
 ## 工程標準與慣例 (Mandates)
 1.  **跨平台執行環境規範 (Windows & macOS)**:
@@ -47,6 +47,10 @@
    - 排程註冊統一在 `main.go` 中透過 `AddJob(spec, func)` 進行。
    - **功能開關**: 所有功能模組 (如 News, Redeem) 必須支援透過 `config.yaml` 內的 `service: bool` 欄位控制啟動，且為確保向下相容性，該欄位在讀取失敗或不存在時應預設為 `true`。
    - **新聞通知順序**: 為了符合閱讀習慣，偵測到多筆新公告時，必須按發佈時間「由舊到新」傳送 (即對 `FetchNews` 回傳的降序列表進行反向遍歷)。
+   - **內容處理**: 
+     - 獲取新聞內容時應優先使用 `FetchNewsDetail` 獲取完整內容。
+     - HTML 內容必須使用 `html-to-markdown/v2` 轉換為 Markdown 格式。
+     - 傳送至 Discord 的訊息若可能超過 2000 字元，必須使用 `scheduler.TruncateString` 進行安全截斷，確保不破壞 UTF-8 編碼與 Markdown 粗體標籤。
 6. **測試規範 (Testing)**:
    - 所有外部 API 交互 (Repository 層) 必須具備使用 `httptest` 模擬回應的整合測試。
    - 核心業務任務 (Scheduler 層) 必須透過介面抽離 (如 `Messenger`) 進行邏輯驗證，確保過濾與發送順序正確。

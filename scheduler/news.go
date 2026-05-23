@@ -41,14 +41,14 @@ func (s *Scheduler) RunNewsTask() {
 		return
 	}
 
-	oldNews, err := loadNewsFromFile(s.Config.News.StoragePath)
+	oldNewsIDs, err := loadNewsFromFile(s.Config.News.StoragePath)
 	if err != nil {
 		log.Printf("Error loading old news from file: %v", err)
 		// Continue with empty oldNews if file load fails to allow saving new news
-		oldNews = []model.NewsItem{}
+		oldNewsIDs = []string{}
 	}
 
-	err = compareAndNotify(s.DiscordBot, channelID, oldNews, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed, s.Config.News.MentionRoleID)
+	err = compareAndNotify(s.DiscordBot, channelID, oldNewsIDs, newNews, s.Config.News.SendContent, s.Config.News.HideEmbed, s.Config.News.MentionRoleID)
 	if err != nil {
 		log.Printf("Error comparing and notifying news: %v", err)
 	}
@@ -59,39 +59,46 @@ func (s *Scheduler) RunNewsTask() {
 	}
 }
 
-// loadNewsFromFile loads news items from news.json.
-func loadNewsFromFile(filePath string) ([]model.NewsItem, error) {
+// loadNewsFromFile loads news IDs from news.json.
+func loadNewsFromFile(filePath string) ([]string, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []model.NewsItem{}, nil // File doesn't exist, return empty slice
+			return []string{}, nil // File doesn't exist, return empty slice
 		}
 		return nil, fmt.Errorf("failed to read news file: %w", err)
 	}
 
-	var newsItems []model.NewsItem
-	err = json.Unmarshal(data, &newsItems)
+	var newsIDs []string
+	err = json.Unmarshal(data, &newsIDs)
 	if err != nil {
+		// Try to handle old format (slice of objects) for backward compatibility
+		type oldNewsItem struct {
+			ID string `json:"id"`
+		}
+		var oldItems []oldNewsItem
+		if err2 := json.Unmarshal(data, &oldItems); err2 == nil {
+			ids := make([]string, len(oldItems))
+			for i, item := range oldItems {
+				ids[i] = item.ID
+			}
+			return ids, nil
+		}
 		return nil, fmt.Errorf("failed to unmarshal news data from file: %w", err)
 	}
-	return newsItems, nil
+	return newsIDs, nil
 }
 
-// saveNewsToFile saves news items to news.json, only storing ID, Subject, and PublishedAt.
+// saveNewsToFile saves news IDs to news.json.
 func saveNewsToFile(filePath string, newsItems []model.NewsItem) error {
-	type minimalNewsItem struct {
-		ID          int       `json:"id"`
-		Subject     string    `json:"subject"`
-		PublishedAt time.Time `json:"publishedAt"`
+	// Limit the number of news items to save to model.DefaultNewsLimit
+	if len(newsItems) > model.DefaultNewsLimit {
+		newsItems = newsItems[:model.DefaultNewsLimit]
 	}
 
-	toSave := make([]minimalNewsItem, len(newsItems))
+	toSave := make([]string, len(newsItems))
 	for i, item := range newsItems {
-		toSave[i] = minimalNewsItem{
-			ID:          item.ID,
-			Subject:     item.Subject,
-			PublishedAt: item.PublishedAt,
-		}
+		toSave[i] = item.ID
 	}
 
 	data, err := json.MarshalIndent(toSave, "", "  ")
@@ -106,11 +113,11 @@ func saveNewsToFile(filePath string, newsItems []model.NewsItem) error {
 	return nil
 }
 
-// compareAndNotify compares old and new news items and sends notifications for new ones.
-func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews []model.NewsItem, sendContent bool, hideEmbed bool, mentionRoleID string) error {
-	oldNewsMap := make(map[int]struct{})
-	for _, item := range oldNews {
-		oldNewsMap[item.ID] = struct{}{}
+// compareAndNotify compares old news IDs and new news items and sends notifications for new ones.
+func compareAndNotify(bot discord.Messenger, channelID string, oldNewsIDs []string, newNews []model.NewsItem, sendContent bool, hideEmbed bool, mentionRoleID string) error {
+	oldNewsMap := make(map[string]struct{})
+	for _, id := range oldNewsIDs {
+		oldNewsMap[id] = struct{}{}
 	}
 
 	var newAnnouncements []model.NewsItem
@@ -125,7 +132,7 @@ func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews 
 		// Iterate in reverse to send from oldest to newest
 		for i := len(newAnnouncements) - 1; i >= 0; i-- {
 			newAnnc := newAnnouncements[i]
-			newsURL := fmt.Sprintf("https://www.browndust2.com/zh-tw/news/view?id=%d", newAnnc.ID)
+			newsURL := fmt.Sprintf("https://www.browndust2.com/zh-tw/news/view?id=%s", newAnnc.ID)
 			if hideEmbed {
 				newsURL = "<" + newsURL + ">"
 			}
@@ -137,20 +144,29 @@ func compareAndNotify(bot discord.Messenger, channelID string, oldNews, newNews 
 				message = fmt.Sprintf("%s\n%s", tag, message)
 			}
 
-			if sendContent && newAnnc.Content != "" {
-				content, err := htmltomarkdown.ConvertString(newAnnc.Content)
+			if sendContent {
+				// Fetch full content from detail API
+				detail, err := bd2news.FetchNewsDetail(context.Background(), newAnnc.ID)
 				if err != nil {
-					log.Printf("Error converting HTML to Markdown for news %d: %v", newAnnc.ID, err)
-					content = newAnnc.Content // Fallback to raw content if conversion fails
+					log.Printf("Error fetching detail for news %s: %v", newAnnc.ID, err)
+					// Fallback to preview content
+					if newAnnc.Content != "" {
+						content, _ := htmltomarkdown.ConvertString(newAnnc.Content)
+						message += fmt.Sprintf("\n%s\n", TruncateString(content, 1800))
+					}
+				} else if detail.ContentHtml != "" {
+					content, err := htmltomarkdown.ConvertString(detail.ContentHtml)
+					if err != nil {
+						log.Printf("Error converting HTML to Markdown for news %s: %v", newAnnc.ID, err)
+						content = detail.ContentHtml
+					}
+					message += fmt.Sprintf("\n%s\n", TruncateString(content, 1800))
 				}
-				// Use TruncateString for safe UTF-8 and Markdown-aware truncation
-				content = TruncateString(content, 1800)
-				message += fmt.Sprintf("\n%s\n", content)
 			}
 
 			err := bot.SendMessage(channelID, message)
 			if err != nil {
-				log.Printf("Error sending Discord message for new announcement %d to channel %s: %v", newAnnc.ID, channelID, err)
+				log.Printf("Error sending Discord message for new announcement %s to channel %s: %v", newAnnc.ID, channelID, err)
 			}
 			time.Sleep(1 * time.Second) // Avoid hitting Discord rate limits
 		}
