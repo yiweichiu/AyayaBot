@@ -145,3 +145,7 @@ go test -v ./repository/bd2news/...
 
 ---
 *本機器人僅供學習與技術交流使用，所有資料來源歸原官方所有。*
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

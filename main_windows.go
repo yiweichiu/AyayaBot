@@ -23,7 +23,10 @@ const (
 	errorAlreadyExists syscall.Errno = 183
 	mbOk               uint32        = 0x00000000
 	mbIconWarning      uint32        = 0x00000030
+	mbYesNo            uint32        = 0x00000004
+	idYes              int           = 6
 )
+
 
 //go:embed assets/icon.ico
 var iconData []byte
@@ -60,6 +63,16 @@ func showInputDialog(title, message, defaultAnswer string) (string, bool) {
 	// Use PowerShell to show an input box via Microsoft.VisualBasic.Interaction
 	psCommand := fmt.Sprintf(`[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null; $res = [Microsoft.VisualBasic.Interaction]::InputBox('%s', '%s', '%s'); if($res) { Write-Host $res }`, message, title, defaultAnswer)
 	out, err := exec.Command("powershell", "-NoProfile", "-Command", psCommand).Output()
+	if err != nil {
+		return "", false
+	}
+	result := strings.TrimSpace(string(out))
+	if result == "" {
+		return "", false
+	}
+	return result, true
+}
+and("powershell", "-NoProfile", "-Command", psCommand).Output()
 	if err != nil {
 		return "", false
 	}

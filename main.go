@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 	"github.com/yiweichiu/AyayaBot/discord"
 	"github.com/yiweichiu/AyayaBot/logger"
 	"github.com/yiweichiu/AyayaBot/scheduler"
+	"github.com/yiweichiu/AyayaBot/updater"
 )
 
 var (
@@ -66,6 +68,7 @@ func onReady() {
 	mRedeemMentionID := mRedeemMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.Redeem.MentionRoleID != "" && cfg.Redeem.MentionRoleID != "here")
 
 	systray.AddSeparator()
+	mUpdate := systray.AddMenuItem("檢查更新", "檢查是否有新版本")
 	mQuit := systray.AddMenuItem("關閉", "停止機器人並結束程式")
 
 	bot, err := setupDiscord(cfg)
@@ -84,11 +87,36 @@ func onReady() {
 	}
 	globalScheduler = s
 
-	setupSignals(mQuit, mNewsService, mNewsContent, mNewsEmbed, mRedeemService, mRedeemEmbed,
+	setupSignals(mQuit, mUpdate, mNewsService, mNewsContent, mNewsEmbed, mRedeemService, mRedeemEmbed,
 		mNewsMentionNone, mNewsMentionHere, mNewsMentionID,
 		mRedeemMentionNone, mRedeemMentionHere, mRedeemMentionID,
 		cfg)
 	log.Println("AyayaBot is running.")
+}
+
+func runUpdateCheck() {
+	info, err := updater.CheckUpdate()
+	if err != nil {
+		log.Printf("Failed to check update: %v", err)
+		showAlert("檢查更新失敗", fmt.Sprintf("無法獲取更新資訊：\n%v", err))
+		return
+	}
+
+	if info == nil {
+		showAlert("檢查更新", "目前已經是最新版本！")
+		return
+	}
+
+	msg := fmt.Sprintf("發現新版本 %s，是否要開始更新？\n更新完成後程式將自動關閉，請手動重啟。", info.Version)
+	if showConfirmDialog("發現新版本", msg) {
+		if err := updater.DoUpdate(info.DownloadURL); err != nil {
+			log.Printf("Failed to apply update: %v", err)
+			showAlert("更新失敗", fmt.Sprintf("更新過程中發生錯誤：\n%v", err))
+		} else {
+			showAlert("更新成功", "更新已完成，程式即將關閉。\n請重新啟動以套用新版本。")
+			systray.Quit()
+		}
+	}
 }
 
 func setupSystray() {
@@ -162,7 +190,7 @@ func updateMentionChecks(none, here, custom *systray.MenuItem, roleID string) {
 	}
 }
 
-func setupSignals(mQuit, mNews, mNewsContent, mNewsEmbed, mRedeem, mRedeemEmbed,
+func setupSignals(mQuit, mUpdate, mNews, mNewsContent, mNewsEmbed, mRedeem, mRedeemEmbed,
 	mNewsMNone, mNewsMHere, mNewsMID,
 	mRedeemMNone, mRedeemMHere, mRedeemMID *systray.MenuItem,
 	cfg *config.Config) {
@@ -180,6 +208,8 @@ func setupSignals(mQuit, mNews, mNewsContent, mNewsEmbed, mRedeem, mRedeemEmbed,
 				log.Println("Quit clicked.")
 				systray.Quit()
 				return
+			case <-mUpdate.ClickedCh:
+				runUpdateCheck()
 			case <-mNews.ClickedCh:
 				cfg.News.Service = !cfg.News.Service
 				if cfg.News.Service {

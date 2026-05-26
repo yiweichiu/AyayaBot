@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 
@@ -48,4 +49,13 @@ func showInputDialog(title, message, defaultAnswer string) (string, bool) {
 		return "", false
 	}
 	return string(out[:len(out)-1]), true // Remove trailing newline
+}
+
+func showConfirmDialog(title, message string) bool {
+	script := fmt.Sprintf("button returned of (display dialog %q with title %q buttons {\"取消\", \"開始更新\"} default button \"開始更新\")", message, title)
+	out, err := exec.Command("osascript", "-e", script).Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) == "開始更新"
 }

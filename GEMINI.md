@@ -55,9 +55,13 @@
    - 所有外部 API 交互 (Repository 層) 必須具備使用 `httptest` 模擬回應的整合測試。
    - 核心業務任務 (Scheduler 層) 必須透過介面抽離 (如 `Messenger`) 進行邏輯驗證，確保過濾與發送順序正確。
    - 測試應避免產生持久性的副作用檔案（如 `news.json`），若需測試檔案讀寫應使用 Mock 或備份機制。
+7. **版本管理與自動更新**:
+   - **版本號**: 定義在 `updater/updater.go` 中的 `CurrentVersion`。正式發佈時應透過 `ldflags` 注入 Git Tag 名稱。
+   - **更新源**: 使用 GitHub Releases。
+   - **打包格式**: Windows 使用 `.zip`，macOS 使用 `.tar.gz`。執行檔必須位於壓縮包根目錄。
 
 ## 常用命令
-- **編譯專案**: `go build -o ayayabot main.go`
+- **編譯專案**: `go build -o ayayabot .`
 - **執行**: `./ayayabot`
 
 ## 溝通偏好
