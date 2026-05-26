@@ -33,6 +33,11 @@ func (s *Scheduler) AddJob(spec string, cmd func()) (cron.EntryID, error) {
 	return id, nil
 }
 
+func (s *Scheduler) RemoveJob(id cron.EntryID) {
+	s.Cron.Remove(id)
+	log.Printf("Removed scheduled job with ID: %v", id)
+}
+
 func (s *Scheduler) Start() {
 	s.Cron.Start()
 	log.Println("Scheduler started.")

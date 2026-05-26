@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/getlantern/systray"
+	"github.com/robfig/cron/v3"
 	"github.com/yiweichiu/AyayaBot/config"
 	"github.com/yiweichiu/AyayaBot/discord"
 	"github.com/yiweichiu/AyayaBot/logger"
@@ -18,6 +19,8 @@ import (
 var (
 	globalBot       *discord.Bot
 	globalScheduler *scheduler.Scheduler
+	newsJobIDs      []cron.EntryID
+	redeemJobIDs    []cron.EntryID
 )
 
 func main() {
@@ -59,6 +62,14 @@ func onReady() {
 	mNewsMentionHere := mNewsMention.AddSubMenuItemCheckbox("@here", "", cfg.News.MentionRoleID == "here")
 	mNewsMentionID := mNewsMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.News.MentionRoleID != "" && cfg.News.MentionRoleID != "here")
 
+	mNewsFreq := mNewsParent.AddSubMenuItem("檢查頻率", "設定新聞檢查頻率")
+	mNewsFreq1 := mNewsFreq.AddSubMenuItemCheckbox("每小時", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 * * * *")
+	mNewsFreq2 := mNewsFreq.AddSubMenuItemCheckbox("每 2 小時", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 */2 * * *")
+	mNewsFreq4 := mNewsFreq.AddSubMenuItemCheckbox("每 4 小時", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 */4 * * *")
+	mNewsFreq8 := mNewsFreq.AddSubMenuItemCheckbox("每 8 小時", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 */8 * * *")
+	mNewsFreq12 := mNewsFreq.AddSubMenuItemCheckbox("每 12 小時", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 */12 * * *")
+	mNewsFreqDay := mNewsFreq.AddSubMenuItemCheckbox("每天", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 9 * * *")
+
 	mRedeemParent := systray.AddMenuItem("兌換碼", "兌換碼通知設定")
 	mRedeemService := mRedeemParent.AddSubMenuItemCheckbox("啟用", "開關兌換碼通知功能", cfg.Redeem.Service)
 	mRedeemEmbed := mRedeemParent.AddSubMenuItemCheckbox("隱藏預覽", "是否隱藏 Discord 連結預覽", cfg.Redeem.HideEmbed)
@@ -66,6 +77,14 @@ func onReady() {
 	mRedeemMentionNone := mRedeemMention.AddSubMenuItemCheckbox("無", "", cfg.Redeem.MentionRoleID == "")
 	mRedeemMentionHere := mRedeemMention.AddSubMenuItemCheckbox("@here", "", cfg.Redeem.MentionRoleID == "here")
 	mRedeemMentionID := mRedeemMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.Redeem.MentionRoleID != "" && cfg.Redeem.MentionRoleID != "here")
+
+	mRedeemFreq := mRedeemParent.AddSubMenuItem("檢查頻率", "設定兌換碼檢查頻率")
+	mRedeemFreq1 := mRedeemFreq.AddSubMenuItemCheckbox("每小時", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 * * * *")
+	mRedeemFreq2 := mRedeemFreq.AddSubMenuItemCheckbox("每 2 小時", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 */2 * * *")
+	mRedeemFreq4 := mRedeemFreq.AddSubMenuItemCheckbox("每 4 小時", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 */4 * * *")
+	mRedeemFreq8 := mRedeemFreq.AddSubMenuItemCheckbox("每 8 小時", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 */8 * * *")
+	mRedeemFreq12 := mRedeemFreq.AddSubMenuItemCheckbox("每 12 小時", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 */12 * * *")
+	mRedeemFreqDay := mRedeemFreq.AddSubMenuItemCheckbox("每天", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 9 * * *")
 
 	systray.AddSeparator()
 	mUpdate := systray.AddMenuItem("檢查更新", "檢查是否有新版本")
@@ -90,6 +109,8 @@ func onReady() {
 	setupSignals(mQuit, mUpdate, mNewsService, mNewsContent, mNewsEmbed, mRedeemService, mRedeemEmbed,
 		mNewsMentionNone, mNewsMentionHere, mNewsMentionID,
 		mRedeemMentionNone, mRedeemMentionHere, mRedeemMentionID,
+		mNewsFreq1, mNewsFreq2, mNewsFreq4, mNewsFreq8, mNewsFreq12, mNewsFreqDay,
+		mRedeemFreq1, mRedeemFreq2, mRedeemFreq4, mRedeemFreq8, mRedeemFreq12, mRedeemFreqDay,
 		cfg)
 	log.Println("AyayaBot is running.")
 }
@@ -144,8 +165,11 @@ func setupScheduler(cfg *config.Config, bot *discord.Bot) (*scheduler.Scheduler,
 	// Register News jobs
 	if s.GetChannelID(cfg.News.Channel) != "" {
 		for _, spec := range cfg.News.Schedule {
-			if _, err := s.AddJob(spec, s.RunNewsTask); err != nil {
+			id, err := s.AddJob(spec, s.RunNewsTask)
+			if err != nil {
 				log.Printf("Failed to add news job: %v", err)
+			} else {
+				newsJobIDs = append(newsJobIDs, id)
 			}
 		}
 	} else {
@@ -155,8 +179,11 @@ func setupScheduler(cfg *config.Config, bot *discord.Bot) (*scheduler.Scheduler,
 	// Register Redeem jobs
 	if s.GetChannelID(cfg.Redeem.Channel) != "" {
 		for _, spec := range cfg.Redeem.Schedule {
-			if _, err := s.AddJob(spec, s.RunRedeemTask); err != nil {
+			id, err := s.AddJob(spec, s.RunRedeemTask)
+			if err != nil {
 				log.Printf("Failed to add redeem job: %v", err)
+			} else {
+				redeemJobIDs = append(redeemJobIDs, id)
 			}
 		}
 	} else {
@@ -190,9 +217,67 @@ func updateMentionChecks(none, here, custom *systray.MenuItem, roleID string) {
 	}
 }
 
+func updateFrequencyChecks(m1, m2, m4, m8, m12, mDay *systray.MenuItem, spec string) {
+	m1.Uncheck()
+	m2.Uncheck()
+	m4.Uncheck()
+	m8.Uncheck()
+	m12.Uncheck()
+	mDay.Uncheck()
+
+	switch spec {
+	case "0 * * * *":
+		m1.Check()
+	case "0 */2 * * *":
+		m2.Check()
+	case "0 */4 * * *":
+		m4.Check()
+	case "0 */8 * * *":
+		m8.Check()
+	case "0 */12 * * *":
+		m12.Check()
+	case "0 9 * * *":
+		mDay.Check()
+	}
+}
+
+func reloadNewsJobs(cfg *config.Config) {
+	if globalScheduler == nil {
+		return
+	}
+	for _, id := range newsJobIDs {
+		globalScheduler.RemoveJob(id)
+	}
+	newsJobIDs = nil
+	for _, spec := range cfg.News.Schedule {
+		id, err := globalScheduler.AddJob(spec, globalScheduler.RunNewsTask)
+		if err == nil {
+			newsJobIDs = append(newsJobIDs, id)
+		}
+	}
+}
+
+func reloadRedeemJobs(cfg *config.Config) {
+	if globalScheduler == nil {
+		return
+	}
+	for _, id := range redeemJobIDs {
+		globalScheduler.RemoveJob(id)
+	}
+	redeemJobIDs = nil
+	for _, spec := range cfg.Redeem.Schedule {
+		id, err := globalScheduler.AddJob(spec, globalScheduler.RunRedeemTask)
+		if err == nil {
+			redeemJobIDs = append(redeemJobIDs, id)
+		}
+	}
+}
+
 func setupSignals(mQuit, mUpdate, mNews, mNewsContent, mNewsEmbed, mRedeem, mRedeemEmbed,
 	mNewsMNone, mNewsMHere, mNewsMID,
-	mRedeemMNone, mRedeemMHere, mRedeemMID *systray.MenuItem,
+	mRedeemMNone, mRedeemMHere, mRedeemMID,
+	mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay,
+	mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay *systray.MenuItem,
 	cfg *config.Config) {
 	go func() {
 		sc := make(chan os.Signal, 1)
@@ -292,6 +377,70 @@ func setupSignals(mQuit, mUpdate, mNews, mNewsContent, mNewsEmbed, mRedeem, mRed
 					updateMentionChecks(mRedeemMNone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
 					_ = config.SaveConfig("config.yaml", cfg)
 				}
+
+			// News Frequency Handlers
+			case <-mNewsF1.ClickedCh:
+				cfg.News.Schedule = []string{"0 * * * *"}
+				updateFrequencyChecks(mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay, cfg.News.Schedule[0])
+				reloadNewsJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mNewsF2.ClickedCh:
+				cfg.News.Schedule = []string{"0 */2 * * *"}
+				updateFrequencyChecks(mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay, cfg.News.Schedule[0])
+				reloadNewsJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mNewsF4.ClickedCh:
+				cfg.News.Schedule = []string{"0 */4 * * *"}
+				updateFrequencyChecks(mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay, cfg.News.Schedule[0])
+				reloadNewsJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mNewsF8.ClickedCh:
+				cfg.News.Schedule = []string{"0 */8 * * *"}
+				updateFrequencyChecks(mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay, cfg.News.Schedule[0])
+				reloadNewsJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mNewsF12.ClickedCh:
+				cfg.News.Schedule = []string{"0 */12 * * *"}
+				updateFrequencyChecks(mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay, cfg.News.Schedule[0])
+				reloadNewsJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mNewsFDay.ClickedCh:
+				cfg.News.Schedule = []string{"0 9 * * *"}
+				updateFrequencyChecks(mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay, cfg.News.Schedule[0])
+				reloadNewsJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+
+			// Redeem Frequency Handlers
+			case <-mRedeemF1.ClickedCh:
+				cfg.Redeem.Schedule = []string{"0 * * * *"}
+				updateFrequencyChecks(mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay, cfg.Redeem.Schedule[0])
+				reloadRedeemJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mRedeemF2.ClickedCh:
+				cfg.Redeem.Schedule = []string{"0 */2 * * *"}
+				updateFrequencyChecks(mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay, cfg.Redeem.Schedule[0])
+				reloadRedeemJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mRedeemF4.ClickedCh:
+				cfg.Redeem.Schedule = []string{"0 */4 * * *"}
+				updateFrequencyChecks(mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay, cfg.Redeem.Schedule[0])
+				reloadRedeemJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mRedeemF8.ClickedCh:
+				cfg.Redeem.Schedule = []string{"0 */8 * * *"}
+				updateFrequencyChecks(mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay, cfg.Redeem.Schedule[0])
+				reloadRedeemJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mRedeemF12.ClickedCh:
+				cfg.Redeem.Schedule = []string{"0 */12 * * *"}
+				updateFrequencyChecks(mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay, cfg.Redeem.Schedule[0])
+				reloadRedeemJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mRedeemFDay.ClickedCh:
+				cfg.Redeem.Schedule = []string{"0 9 * * *"}
+				updateFrequencyChecks(mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay, cfg.Redeem.Schedule[0])
+				reloadRedeemJobs(cfg)
+				_ = config.SaveConfig("config.yaml", cfg)
 			}
 		}
 	}()
