@@ -95,7 +95,7 @@ func DoUpdate(downloadURL string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		importReader := strings.NewReader(string(bodyBytes))
 		zipReader, err := zip.NewReader(importReader, int64(len(bodyBytes)))
 		if err != nil {
