@@ -15,7 +15,7 @@ import (
 func TestFetchNews(t *testing.T) {
 	now := time.Now()
 	mockResponse := model.NewsAPIResponse{}
-	
+
 	// Item 1: Oldest
 	item1 := struct {
 		ID             string    `json:"id"`

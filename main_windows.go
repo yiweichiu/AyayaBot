@@ -21,8 +21,8 @@ var (
 
 const (
 	errorAlreadyExists syscall.Errno = 183
-	mbOk              uint32        = 0x00000000
-	mbIconWarning     uint32        = 0x00000030
+	mbOk               uint32        = 0x00000000
+	mbIconWarning      uint32        = 0x00000030
 )
 
 //go:embed assets/icon.ico

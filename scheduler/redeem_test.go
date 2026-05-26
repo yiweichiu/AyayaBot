@@ -13,12 +13,12 @@ func TestProcessRedeemTask(t *testing.T) {
 	defer os.Remove(testRedeemFile)
 
 	mockBot := &MockMessenger{}
-	
+
 	fetchedCodes := []model.RedeemCodeInfo{
 		{Code: "NEW_CODE_1", Reward: "Reward 1"},
 		{Code: "OLD_CODE", Reward: "Old Reward"},
 	}
-	
+
 	previouslySent := []string{"OLD_CODE"}
 
 	err := processRedeemTask(mockBot, "test-channel", fetchedCodes, previouslySent, false, testRedeemFile, "")

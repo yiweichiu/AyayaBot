@@ -22,7 +22,7 @@ func TruncateString(s string, maxRunes int) string {
 	}
 	// Case 2: "word **" -> This is balanced if there's an opening "**"
 	// We need to check the TOTAL count of "**" in the truncated string.
-	
+
 	boldCount := strings.Count(truncated, "**")
 	if boldCount%2 != 0 {
 		// If odd, we have an open bold tag. Close it.

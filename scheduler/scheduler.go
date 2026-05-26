@@ -3,9 +3,9 @@ package scheduler
 import (
 	"log"
 
-	"github.com/yiweichiu/AyayaBot/config" // Import config package
-	"github.com/yiweichiu/AyayaBot/discord" // Import discord package
 	"github.com/robfig/cron/v3"
+	"github.com/yiweichiu/AyayaBot/config"  // Import config package
+	"github.com/yiweichiu/AyayaBot/discord" // Import discord package
 )
 
 // Scheduler manages scheduled tasks for various functionalities.

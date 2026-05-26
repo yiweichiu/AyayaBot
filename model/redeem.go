@@ -1,7 +1,5 @@
 package model
 
-
-
 // RedeemCode represents the structure of a single redeem code from the API.
 type RedeemCode struct {
 	Code       string                 `json:"code"`
