@@ -16,7 +16,7 @@ import (
 
 // CurrentVersion is the current version of the application.
 // This should be updated for each release, or injected via ldflags.
-const CurrentVersion = "v0.0.0"
+var CurrentVersion = "v0.0.0"
 
 const (
 	owner = "yiweichiu"
