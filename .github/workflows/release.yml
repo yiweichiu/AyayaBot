@@ -22,6 +22,7 @@ jobs:
             goarch: arm64
             binary_name: ayayabot
 
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,7 +41,7 @@ jobs:
 
       - name: Build
         run: |
-          go build -ldflags="${{ matrix.ldflags }}" -o ${{ matrix.binary_name }} main.go
+          go build -ldflags="${{ matrix.ldflags }}" -o ${{ matrix.binary_name }} .
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
