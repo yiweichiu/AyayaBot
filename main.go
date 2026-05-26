@@ -53,6 +53,9 @@ func onReady() {
 		return
 	}
 
+	systray.AddMenuItem(fmt.Sprintf("版本: %s", updater.CurrentVersion), "當前程式版本").Disable()
+	systray.AddSeparator()
+
 	mNewsParent := systray.AddMenuItem("新聞", "新聞通知設定")
 	mNewsService := mNewsParent.AddSubMenuItemCheckbox("啟用", "開關新聞通知功能", cfg.News.Service)
 	mNewsContent := mNewsParent.AddSubMenuItemCheckbox("發送內文", "是否在通知中包含新聞內容", cfg.News.SendContent)
