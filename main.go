@@ -21,6 +21,7 @@ var (
 	globalScheduler *scheduler.Scheduler
 	newsJobIDs      []cron.EntryID
 	redeemJobIDs    []cron.EntryID
+	shouldRestart   bool
 )
 
 func main() {
@@ -30,9 +31,6 @@ func main() {
 		showAlert("AyayaBot", "程式已經在運行中！\n請檢查系統工作列。")
 		return
 	}
-	if cleanup != nil {
-		defer cleanup()
-	}
 
 	// Initialize logger
 	if err := logger.Init(); err != nil {
@@ -41,6 +39,14 @@ func main() {
 	defer logger.Close()
 
 	systray.Run(onReady, onExit)
+
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if shouldRestart {
+		restartApp()
+	}
 }
 
 func onReady() {
@@ -131,13 +137,14 @@ func runUpdateCheck() {
 		return
 	}
 
-	msg := fmt.Sprintf("發現新版本 %s，是否要開始更新？\n更新完成後程式將自動關閉，請手動重啟。", info.Version)
+	msg := fmt.Sprintf("發現新版本 %s，是否要開始更新？\n更新完成後程式將自動重新啟動。", info.Version)
 	if showConfirmDialog("發現新版本", msg) {
 		if err := updater.DoUpdate(info.DownloadURL); err != nil {
 			log.Printf("Failed to apply update: %v", err)
 			showAlert("更新失敗", fmt.Sprintf("更新過程中發生錯誤：\n%v", err))
 		} else {
-			showAlert("更新成功", "更新已完成，程式即將關閉。\n請重新啟動以套用新版本。")
+			showAlert("更新成功", "更新已完成，程式即將自動重新啟動。")
+			shouldRestart = true
 			systray.Quit()
 		}
 	}

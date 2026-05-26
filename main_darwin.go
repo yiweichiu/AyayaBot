@@ -59,3 +59,12 @@ func showConfirmDialog(title, message string) bool {
 	}
 	return strings.TrimSpace(string(out)) == "開始更新"
 }
+
+func restartApp() {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	cmd := exec.Command(exe, os.Args[1:]...)
+	_ = cmd.Start()
+}

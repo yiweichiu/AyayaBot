@@ -78,3 +78,12 @@ func showInputDialog(title, message, defaultAnswer string) (string, bool) {
 	}
 	return result, true
 }
+
+func restartApp() {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	cmd := exec.Command(exe, os.Args[1:]...)
+	_ = cmd.Start()
+}
