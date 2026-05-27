@@ -68,8 +68,9 @@ func onReady() {
 	mNewsEmbed := mNewsParent.AddSubMenuItemCheckbox("隱藏預覽", "是否隱藏 Discord 連結預覽", cfg.News.HideEmbed)
 	mNewsMention := mNewsParent.AddSubMenuItem("標註設定", "設定標註對象")
 	mNewsMentionNone := mNewsMention.AddSubMenuItemCheckbox("無", "", cfg.News.MentionRoleID == "")
+	mNewsMentionEveryone := mNewsMention.AddSubMenuItemCheckbox("@everyone", "", cfg.News.MentionRoleID == "everyone")
 	mNewsMentionHere := mNewsMention.AddSubMenuItemCheckbox("@here", "", cfg.News.MentionRoleID == "here")
-	mNewsMentionID := mNewsMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.News.MentionRoleID != "" && cfg.News.MentionRoleID != "here")
+	mNewsMentionID := mNewsMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.News.MentionRoleID != "" && cfg.News.MentionRoleID != "here" && cfg.News.MentionRoleID != "everyone")
 
 	mNewsFreq := mNewsParent.AddSubMenuItem("檢查頻率", "設定新聞檢查頻率")
 	mNewsFreq1 := mNewsFreq.AddSubMenuItemCheckbox("每小時", "", len(cfg.News.Schedule) > 0 && cfg.News.Schedule[0] == "0 * * * *")
@@ -84,8 +85,9 @@ func onReady() {
 	mRedeemEmbed := mRedeemParent.AddSubMenuItemCheckbox("隱藏預覽", "是否隱藏 Discord 連結預覽", cfg.Redeem.HideEmbed)
 	mRedeemMention := mRedeemParent.AddSubMenuItem("標註設定", "設定標註對象")
 	mRedeemMentionNone := mRedeemMention.AddSubMenuItemCheckbox("無", "", cfg.Redeem.MentionRoleID == "")
+	mRedeemMentionEveryone := mRedeemMention.AddSubMenuItemCheckbox("@everyone", "", cfg.Redeem.MentionRoleID == "everyone")
 	mRedeemMentionHere := mRedeemMention.AddSubMenuItemCheckbox("@here", "", cfg.Redeem.MentionRoleID == "here")
-	mRedeemMentionID := mRedeemMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.Redeem.MentionRoleID != "" && cfg.Redeem.MentionRoleID != "here")
+	mRedeemMentionID := mRedeemMention.AddSubMenuItemCheckbox("自訂 ID", "", cfg.Redeem.MentionRoleID != "" && cfg.Redeem.MentionRoleID != "here" && cfg.Redeem.MentionRoleID != "everyone")
 
 	mRedeemFreq := mRedeemParent.AddSubMenuItem("檢查頻率", "設定兌換碼檢查頻率")
 	mRedeemFreq1 := mRedeemFreq.AddSubMenuItemCheckbox("每小時", "", len(cfg.Redeem.Schedule) > 0 && cfg.Redeem.Schedule[0] == "0 * * * *")
@@ -116,8 +118,8 @@ func onReady() {
 	globalScheduler = s
 
 	setupSignals(mQuit, mUpdate, mNewsService, mNewsContent, mNewsEmbed, mRedeemService, mRedeemEmbed,
-		mNewsMentionNone, mNewsMentionHere, mNewsMentionID,
-		mRedeemMentionNone, mRedeemMentionHere, mRedeemMentionID,
+		mNewsMentionNone, mNewsMentionEveryone, mNewsMentionHere, mNewsMentionID,
+		mRedeemMentionNone, mRedeemMentionEveryone, mRedeemMentionHere, mRedeemMentionID,
 		mNewsFreq1, mNewsFreq2, mNewsFreq4, mNewsFreq8, mNewsFreq12, mNewsFreqDay,
 		mRedeemFreq1, mRedeemFreq2, mRedeemFreq4, mRedeemFreq8, mRedeemFreq12, mRedeemFreqDay,
 		cfg)
@@ -212,14 +214,17 @@ func setupScheduler(cfg *config.Config, bot *discord.Bot) (*scheduler.Scheduler,
 	return s, nil
 }
 
-func updateMentionChecks(none, here, custom *systray.MenuItem, roleID string) {
+func updateMentionChecks(none, everyone, here, custom *systray.MenuItem, roleID string) {
 	none.Uncheck()
+	everyone.Uncheck()
 	here.Uncheck()
 	custom.Uncheck()
 
 	switch roleID {
 	case "":
 		none.Check()
+	case "everyone":
+		everyone.Check()
 	case "here":
 		here.Check()
 	default:
@@ -284,8 +289,8 @@ func reloadRedeemJobs(cfg *config.Config) {
 }
 
 func setupSignals(mQuit, mUpdate, mNews, mNewsContent, mNewsEmbed, mRedeem, mRedeemEmbed,
-	mNewsMNone, mNewsMHere, mNewsMID,
-	mRedeemMNone, mRedeemMHere, mRedeemMID,
+	mNewsMNone, mNewsMEveryone, mNewsMHere, mNewsMID,
+	mRedeemMNone, mRedeemMEveryone, mRedeemMHere, mRedeemMID,
 	mNewsF1, mNewsF2, mNewsF4, mNewsF8, mNewsF12, mNewsFDay,
 	mRedeemF1, mRedeemF2, mRedeemF4, mRedeemF8, mRedeemF12, mRedeemFDay *systray.MenuItem,
 	cfg *config.Config) {
@@ -359,32 +364,40 @@ func setupSignals(mQuit, mUpdate, mNews, mNewsContent, mNewsEmbed, mRedeem, mRed
 			// News Mention Handlers
 			case <-mNewsMNone.ClickedCh:
 				cfg.News.MentionRoleID = ""
-				updateMentionChecks(mNewsMNone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
+				updateMentionChecks(mNewsMNone, mNewsMEveryone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mNewsMEveryone.ClickedCh:
+				cfg.News.MentionRoleID = "everyone"
+				updateMentionChecks(mNewsMNone, mNewsMEveryone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
 				_ = config.SaveConfig("config.yaml", cfg)
 			case <-mNewsMHere.ClickedCh:
 				cfg.News.MentionRoleID = "here"
-				updateMentionChecks(mNewsMNone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
+				updateMentionChecks(mNewsMNone, mNewsMEveryone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
 				_ = config.SaveConfig("config.yaml", cfg)
 			case <-mNewsMID.ClickedCh:
 				if id, ok := showInputDialog("自訂標註 ID", "請輸入 Discord 身分組 ID:", cfg.News.MentionRoleID); ok {
 					cfg.News.MentionRoleID = id
-					updateMentionChecks(mNewsMNone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
+					updateMentionChecks(mNewsMNone, mNewsMEveryone, mNewsMHere, mNewsMID, cfg.News.MentionRoleID)
 					_ = config.SaveConfig("config.yaml", cfg)
 				}
 
 			// Redeem Mention Handlers
 			case <-mRedeemMNone.ClickedCh:
 				cfg.Redeem.MentionRoleID = ""
-				updateMentionChecks(mRedeemMNone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
+				updateMentionChecks(mRedeemMNone, mRedeemMEveryone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
+				_ = config.SaveConfig("config.yaml", cfg)
+			case <-mRedeemMEveryone.ClickedCh:
+				cfg.Redeem.MentionRoleID = "everyone"
+				updateMentionChecks(mRedeemMNone, mRedeemMEveryone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
 				_ = config.SaveConfig("config.yaml", cfg)
 			case <-mRedeemMHere.ClickedCh:
 				cfg.Redeem.MentionRoleID = "here"
-				updateMentionChecks(mRedeemMNone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
+				updateMentionChecks(mRedeemMNone, mRedeemMEveryone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
 				_ = config.SaveConfig("config.yaml", cfg)
 			case <-mRedeemMID.ClickedCh:
 				if id, ok := showInputDialog("自訂標註 ID", "請輸入 Discord 身分組 ID:", cfg.Redeem.MentionRoleID); ok {
 					cfg.Redeem.MentionRoleID = id
-					updateMentionChecks(mRedeemMNone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
+					updateMentionChecks(mRedeemMNone, mRedeemMEveryone, mRedeemMHere, mRedeemMID, cfg.Redeem.MentionRoleID)
 					_ = config.SaveConfig("config.yaml", cfg)
 				}
 
