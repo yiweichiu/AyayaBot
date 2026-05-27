@@ -5,6 +5,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"syscall"
