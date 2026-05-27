@@ -1,150 +1,81 @@
-# AyayaBot - 棕色塵埃 2 Discord 公告與兌換碼機器人
+# AyayaBot - 多功能 Discord 通知與管理機器人
 
-AyayaBot 是一個使用 Go 語言編寫的 Discord 機器人，專門用於自動監控《棕色塵埃 2》(Brown Dust 2) 的最新官方公告與兌換碼。它能定時抓取資訊並發送到指定的 Discord 頻道，確保你不會錯過任何重要的遊戲動態與獎勵。
+AyayaBot 是一個使用 Go 語言編寫的高效能 Discord 機器人，旨在提供自動化的資訊監控、通知推送與系統管理功能。它具備跨平台支援（Windows & macOS），並提供直觀的系統工作列操作介面。
 
 ## 核心功能
 
-*   **自動監控官方公告**: 定期檢查《棕色塵埃 2》官方新聞 API，發現新公告時按發佈時間「由舊到新」依次通知。支援從詳情 API 獲取完整公告內容，並自動將 HTML 轉換為 Markdown 格式發送，同時具備智慧截斷功能以符合 Discord 訊息限制。
-*   **自動獲取兌換碼**: 從 [BD2 Pulse API](https://thebd2pulse.com/) 獲取最新的兌換碼資訊。
-*   **背景執行與系統工作列**:
-    *   支援 Windows 背景執行，不顯示控制台視窗。
-    *   提供系統工作列圖示，點擊右鍵選單即可「關閉 (Quit)」。
-*   **防重複執行與智慧警告**:
-    *   使用具名 Mutex 偵測程式是否重複啟動。
-    *   重複執行時自動跳出 Windows 原生 `MessageBox` 警告視窗通知使用者。
+*   **自動化資訊監控**: 支援多來源資訊抓取（如遊戲公告、兌換碼等）。具備智慧過濾與紀錄功能，確保資訊不重複推送。
+    *   *目前內建支援《棕色塵埃 2》(Brown Dust 2) 的官方新聞與兌換碼監控。*
+*   **強大的訊息處理**: 
+    *   支援 HTML 轉 Markdown 格式轉換，讓通知內容在 Discord 上更易讀。
+    *   具備智慧截斷功能，確保長訊息符合 Discord 的 2000 字元限制且不破壞 UTF-8 編碼與標籤格式。
+*   **系統工作列整合 (GUI)**:
+    *   提供系統工作列圖示與右鍵選單，可直接在介面上開關各項功能、調整通知標註對象、變更檢查頻率等。
+*   **自動更新系統**: 
+    *   內建版本檢查與自動更新機制，可直接透過 GitHub Releases 下載並更新執行檔，更新後自動重新啟動。
+*   **跨平台與防重複執行**:
+    *   **Windows**: 使用具名 Mutex 確保單一實例執行，支援 `windowsgui` 模式隱藏控制台視窗，並使用原生 `MessageBox` 提示資訊。
+    *   **macOS**: 使用檔案鎖 (Flock) 確保單一實例執行，並透過 `osascript` 提供原生通知對話框。
 *   **自動化日誌管理**: 
-    *   日誌輸出至執行目錄下的 `log/` 資料夾。
-    *   檔案依日期命名 (`YYYYMMDD.log`)，便於追蹤。
+    *   檔案依日期命名 (`YYYYMMDD.log`)。
     *   每日 `00:01` 定時切換日誌檔案。
-    *   啟動時自動檢查並建立日誌目錄。
-*   **智慧過濾**: 
-    *   自動過濾已過期的兌換碼向。
-    *   自動記錄已發送過的公告與兌換碼，避免重複推送。
-*   **完整測試覆蓋**: 
-    *   包含 Repository 層與 Scheduler 層的整合測試。
-    *   使用 `httptest` 模擬 API 與介面抽離 (Mocking) 驗證邏輯。
-*   **多語言支援**: 優先提取繁體中文獎勵說明。
-*   **靈活排程**: 支援基於 `cron` 表達式的多時段排程設定。
-*   **安全管理**: 支援範本化設定檔管理，保護敏感的 API Key 與 Token。
+    *   支援追蹤系統狀態與任務執行紀錄。
+*   **靈活排程與標註**: 
+    *   支援 `cron` 表達式排程設定。
+    *   可自訂各項任務的標註對象（如 `@everyone`, `@here` 或特定的身分組 ID）。
 
 ## 安裝與設定
 
-### 1. 前提條件
+### 1. 下載預編譯版本
 
-確保系統已安裝 Go 1.21 或更高版本。
+請至 [Releases](https://github.com/yiweichiu/AyayaBot/releases) 頁面下載適用於您平台的壓縮包：
+*   **Windows**: 下載 `.zip` 檔，解壓縮後執行 `ayayabot.exe`。
+*   **macOS**: 下載 `.tar.gz` 檔，解壓縮後執行 `ayayabot`。
 
-### 2. 下載與安裝
+### 2. 設定設定檔 (config.yaml)
+
+首次執行前，請參考 `config.yaml.example` 建立 `config.yaml` 並填入您的 Discord Bot Token 與相關設定。
+
+### 3. 自行編譯
+
+如果您想自行編譯，請確保系統已安裝 Go 1.21 或更高版本：
 
 ```bash
 git clone https://github.com/yiweichiu/AyayaBot.git
 cd AyayaBot
 go mod tidy
-```
 
-### 3. 設定設定檔 (重要)
-
-本專案使用 `config.yaml` 進行管理，但為了安全起見，真實的設定檔已被加入 `.gitignore`。請依照以下步驟設定：
-
-1.  複製範本檔：
-    ```bash
-    cp config.yaml.example config.yaml
-    ```
-2.  編輯 `config.yaml` 並填入你的真實資訊：
-    *   `discord.token`: 你的 Discord Bot Token (需包含 `Bot ` 前綴)。
-    *   `discord.channels`: 定義多個頻道，每個頻道包含 `name` (名稱) 與 `id` (頻道 ID)。
-    *   `redeem.channel` / `news.channel`: 指定該服務要發送到的頻道 `name`。**若未指定有效的頻道名稱，該服務將自動停用。**
-    *   `redeem.storage_path` / `news.storage_path`: (選填) 指定已發送紀錄的儲存路徑，預設分別為 `redeem.json` 與 `news.json`。
-    *   `redeem.service` / `news.service`: (選填) 設為 `false` 可停用該功能，預設為 `true`。
-    *   `redeem.hide_embed` / `news.hide_embed`: (選填) 設為 `true` 可隱藏 Discord 連結預覽 (嵌入內容)，預設為 `false`。
-    *   `redeem.mention_role_id` / `news.mention_role_id`: (選填) 設定發送通知時要標註 (Tag) 的對象，支援以下格式：
-        *   **`everyone`**: 標註 `@everyone`。
-        *   **`here`**: 標註 `@here`。
-        *   **身分組 ID**: 填入 Discord 身分組數字 ID 以標註特定身分組 (例如 `"1234567890"`)。
-        *   **留空 `""`**: (預設) 不進行任何標註。
-    *   `news.send_content`: (選填) 設為 `true` 可以在通知中傳送新聞內容，預設為 `false`。
-
-### 4. 編譯與執行
-
-本專案支援在 Windows 與 macOS 上運行，並提供系統工作列 (System Tray) 圖示與單一執行個體檢查 (Single-Instance Check)。
-
-#### Windows (背景執行)
-為了讓程式在背景執行且不顯示黑視窗，請使用以下命令編譯：
-```powershell
-# 編譯為背景執行應用程式 (包含圖示與防重複啟動)
+# Windows (背景執行)
 go build -o ayayabot.exe -ldflags="-H=windowsgui" .
 
-# 執行
-./ayayabot.exe
-```
-
-#### macOS
-在 macOS 上編譯與執行：
-```bash
-# 編譯
+# macOS
 go build -o ayayabot .
-
-# 執行
-./ayayabot
 ```
-*註：macOS 版會自動在系統選單列 (Menu Bar) 顯示圖示，並使用 `osascript` 彈出警告視窗。*
-
-執行後，你可以在系統工作列找到 AyayaBot 圖示，右鍵點擊可選擇「關閉 (Quit)」。
-
-## 跨平台支援細節
-
-*   **Windows**: 
-    *   使用 Win32 API (`CreateMutexW`) 確保單一實例執行。
-    *   重複啟動時使用 `MessageBoxW` 顯示警告。
-    *   支援 `-H=windowsgui` 模式以隱藏控制台。
-*   **macOS (Darwin)**:
-    *   使用檔案鎖 (`syscall.Flock`) 確保單一實例執行。
-    *   重複啟動時使用 AppleScript (`osascript`) 顯示警告。
-    *   圖示建議使用透明背景的 `.png` (目前預設使用 `.ico`)。
 
 ## 專案結構 (Go Idiomatic)
 
 ```text
 AyayaBot/
-├── assets/               # 靜態資源 (如 icon.ico)
-├── config/               # 設定檔載入與環境變數處理
-├── discord/              # Discord Bot 連線與訊息發送邏輯
-├── logger/               # 檔案日誌系統 (初始化與切換邏輯)
-├── model/                # 專案通用資料結構 (NewsItem, RedeemCode)
-├── repository/
-│   ├── bd2news/          # 棕色塵埃 2 新聞 API 交互邏輯
-│   └── bd2redeem/         # 棕色塵埃 2 兌換碼 API 交互邏輯
-├── scheduler/            # 排程管理與業務任務執行 (RunNewsTask, RunRedeemTask)
-├── log/                  # 自動生成的日誌儲存目錄
-├── config.yaml.example   # 設定檔範本 (受 Git 追蹤)
-├── GEMINI.md             # Gemini CLI 開發規範指引
-├── main.go               # 程式入口點，負責主邏輯
-├── main_windows.go       # Windows 平台專屬實作 (Mutex, MessageBox)
-├── main_darwin.go        # macOS 平台專屬實作 (Flock, osascript)
+├── assets/               # 靜態資源 (如圖示)
+├── config/               # 設定檔載入與邏輯
+├── discord/              # Discord Bot 連線與訊息發送
+├── logger/               # 自動化日誌系統
+├── model/                # 專案通用資料結構
+├── repository/           # 資料來源 API 交互邏輯 (可擴充)
+├── scheduler/            # 排程管理與業務任務執行
+├── updater/              # 自動更新邏輯
+├── main.go               # 程式入口與工作列選單邏輯
+├── main_windows.go       # Windows 平台專屬實作
+├── main_darwin.go        # macOS 平台專屬實作
 └── README.md             # 本說明文件
 ```
 
 ## 開發指南
 
-本專案遵循 **Idiomatic Go** 命名規範：
-*   Package 名稱均為簡潔的小寫單字 (例如 `logger`, `config`)。
-*   日誌操作統一由 `logger` 套件管理，確保全局 `log` 套件的輸出被正確導向檔案。
-*   業務邏輯與排程邏輯分離，任務執行函數統一命名為 `Run...Task`。
-*   新增任務時，只需在 `scheduler` 建立任務並在 `main.go` 註冊。
-
-### 執行測試 (Testing)
-
-本專案使用 Go 標準測試框架，包含對外部 API 的整合模擬測試：
-
-```bash
-# 執行所有測試
-go test -v ./...
-
-# 執行特定套件測試
-go test -v ./repository/bd2news/...
-```
+請參考 [GEMINI.md](./GEMINI.md) 了解詳細的開發規範、命名慣例與技術標準。
 
 ---
-*本機器人僅供學習與技術交流使用，所有資料來源歸原官方所有。*
+*本機器人僅供學習與技術交流使用。*
 
 ## License
 
